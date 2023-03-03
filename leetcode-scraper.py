@@ -381,6 +381,7 @@ def attach_header_in_html():
             <style>
                 
                 body {
+                overflow-x: hidden;
                 background-color: lightblue;
                 }
                     .carousel-control-prev > span,
