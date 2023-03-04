@@ -292,7 +292,10 @@ def place_solution_slides(content_soup, slides_json):
                         <div class="carousel-inner">"""
         for img_idx, img_links in enumerate(slides_json[slide_idx]):
             slides_html += f"""<div style="width: auto !important;" class="carousel-item {'active' if img_idx == 0 else ''}">
-                                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls-{slide_idx}" data-bs-slide="prev">
+                                <img src="{img_links['image']}" class="d-block" alt="...">
+                            </div>"""
+        slides_html += f"""</div>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls-{slide_idx}" data-bs-slide="prev">
                                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                 <span class="visually-hidden">Previous</span>
                             </button>
@@ -300,10 +303,6 @@ def place_solution_slides(content_soup, slides_json):
                                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                                 <span class="visually-hidden">Next</span>
                             </button>
-                                <img src="{img_links['image']}" class="d-block" alt="...">
-                            </div>"""
-        slides_html += f"""</div>
-                            
                             </div>"""
         slide_p_tag.replace_with(BeautifulSoup(
             slides_html, 'html.parser'))
@@ -457,7 +456,7 @@ def generate_similar_questions(similar_questions):
         similar_questions = json.loads(similar_questions)
         similar_questions_html += f"""<h6>Similar Questions</h6><div class="row">"""
         for similar_question in similar_questions:
-            similar_questions_html += f"""<td><p><a href="https//leetcode.com/problems/{similar_question['titleSlug']}">{similar_question['title']}</a> Difficulty: {similar_question['difficulty']} <a href="./{similar_question['title']}.html">Local Url</a></p></td>"""
+            similar_questions_html += f"""<td><p><a target="_blank" href="https://leetcode.com/problems/{similar_question['titleSlug']}">{similar_question['title']}</a> Difficulty: {similar_question['difficulty']} <a target="_blank" href="./{similar_question['title']}.html">Local Url</a></p></td>"""
     return similar_questions_html
 
 
@@ -507,7 +506,7 @@ def get_question_data(item_content, headers):
                 hint_content += f"<div> > {hint}</div>"
         else:
             hint_content = "No Hints"
-        return f"""<h3 class="question__url"><a href="{question_url}">{question_title}</a></h3><p> Difficulty: {difficulty}</p>
+        return f"""<h3 class="question__url"><a target="_blank" href="{question_url}">{question_title}</a></h3><p> Difficulty: {difficulty}</p>
                     <div>{company_tag_stats}</div>
                     <div>{similar_questions}</div>
                     <h5>Question</h5>
@@ -646,7 +645,7 @@ def create_all_company_index_html(company_tags, headers):
             html += f'''<tr>
                         <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{question['title']}.html</a></td>
                         <td> Difficulty: {question['difficulty']} </td><td>Frequency: {frequencies[question['questionId']][-2]*10}</td>
-                        <td><a href="https://leetcode.com/problems/{question['titleSlug']}">Leetcode Url</a></td>
+                        <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}">Leetcode Url</a></td>
                         </tr>'''
         with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w') as f:
             f.write(f"""<!DOCTYPE html>
