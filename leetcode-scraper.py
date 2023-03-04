@@ -289,9 +289,9 @@ def place_solution_slides(content_soup, slides_json):
     slide_p_tags = content_soup.select("p:contains('/Documents/')")
     for slide_idx, slide_p_tag in enumerate(slide_p_tags):
         slides_html = f"""<div id="carouselExampleControls-{slide_idx}" class="carousel slide" data-bs-ride="carousel">
-                        <div class="carousel-inner">"""
+                        <div  class="carousel-inner">"""
         for img_idx, img_links in enumerate(slides_json[slide_idx]):
-            slides_html += f"""<div style="width: auto !important;" class="carousel-item {'active' if img_idx == 0 else ''}">
+            slides_html += f"""<div class="carousel-item {'active' if img_idx == 0 else ''}">
                                 <img src="{img_links['image']}" class="d-block" alt="...">
                             </div>"""
         slides_html += f"""</div>
@@ -377,16 +377,32 @@ def attach_header_in_html():
                     });
                     });
     </script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                        const carousel = document.querySelectorAll('.carousel');
+                            console.log(carousel)
+                            const items = Array.from(document.querySelectorAll('.carousel-item'));
+                            console.log(items)
+                            const maxWidth = Math.max(...items.map(item => item.querySelector('img').clientWidth));
+                            console.log(maxWidth);
+                            for (let i = 0; i < carousel.length; i++) {
+                                carousel[i].style.width = maxWidth + 'px';            }
+                });
+                </script>
             <style>
                 
                 body {
                 overflow-x: hidden;
                 background-color: lightblue;
+                left: 10% !important;
+                right: 10% !important;
+                position: absolute;
+
                 }
                     .carousel-control-prev > span,
                 .carousel-control-next > span {
-                background-color: #007bff; /* Change to desired color */
-                border-color: #007bff; /* Change to desired color */
+                background-color: #007bff; 
+                border-color: #007bff; 
                 }
                 img {
                     width: auto;
@@ -454,9 +470,10 @@ def generate_similar_questions(similar_questions):
     similar_questions_html = ""
     if similar_questions:
         similar_questions = json.loads(similar_questions)
-        similar_questions_html += f"""<h6>Similar Questions</h6><div class="row">"""
-        for similar_question in similar_questions:
-            similar_questions_html += f"""<td><p><a target="_blank" href="https://leetcode.com/problems/{similar_question['titleSlug']}">{similar_question['title']}</a> Difficulty: {similar_question['difficulty']} <a target="_blank" href="./{similar_question['title']}.html">Local Url</a></p></td>"""
+        if similar_questions != []:
+            similar_questions_html += f"""<div style="background: beige"><h5>Similar Questions</h5>"""
+            for similar_question in similar_questions:
+                similar_questions_html += f"""<td><p><a target="_blank" href="https://leetcode.com/problems/{similar_question['titleSlug']}">{similar_question['title']}</a> Difficulty: {similar_question['difficulty']} <a target="_blank" href="./{similar_question['title']}.html">Local Url</a></p></td>"""
     return similar_questions_html
 
 
@@ -465,12 +482,13 @@ def get_question_company_tag_stats(company_tag_stats):
     company_tag_stats_html = ""
     if company_tag_stats:
         company_tag_stats = json.loads(company_tag_stats)
-        company_tag_stats_html += f"""<h6>Company Tag Stats</h6><div class="row">"""
-        for key, value in company_tag_stats.items():
-            company_tag_stats_html += f"""<h6>Years: {str(int(key)-1)}-{key}</h6>"""
-            for company_tag_stat in value:
-                company_tag_stats_html += f"""<td>  ||  {company_tag_stat['name']}</td>"""
-                company_tag_stats_html += f"""<td>Frequency: {company_tag_stat['timesEncountered']}</td>"""
+        if company_tag_stats != {}:
+            company_tag_stats_html += f"""<div style="background: wheat;"><h5>Company Tag Stats</h5>"""
+            for key, value in company_tag_stats.items():
+                company_tag_stats_html += f"""<h6>Years: {str(int(key)-1)}-{key}</h6>"""
+                for company_tag_stat in value:
+                    company_tag_stats_html += f"""<td>  ||  {company_tag_stat['name']}</td>"""
+                    company_tag_stats_html += f"""<td>: {company_tag_stat['timesEncountered']}</td>"""
     return company_tag_stats_html
 
 
@@ -585,17 +603,12 @@ def scrape_company_questions():
 
 def scrape_all_company_questions():
     print("Scraping all company questions")
-    '''
-    get req : https://leetcode.com/_next/data/5t12MQGNqIncLszIGV8Ce/problemset/all.json
-    dehydratedState: {queries { 0 { state { data { company Tags}}}}
-    '''
     leetcode_cookie, _, _, save_path, _, overwrite, _ = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
     companies_tag_url = "https://leetcode.com/_next/data/5t12MQGNqIncLszIGV8Ce/problemset/all.json?slug=all"
     company_tags = json.loads(requests.get(url=companies_tag_url,
                                            headers=create_headers(), json={'slug': 'all'}).content)['pageProps']['dehydratedState']['queries'][0]['state']['data']['companyTags']
-    # print(company_tags)
     create_all_company_index_html(company_tags, headers)
     os.chdir('..')
 
