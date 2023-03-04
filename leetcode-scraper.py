@@ -699,7 +699,7 @@ if __name__ == '__main__':
     while True:
         try:
             print("""Starting Leetcode-Scraper v1.0-stable, Built by Anilabha Datta
-                Github-Repo: https: // github.com/anilabha-datta/leetcode-scraper
+                Github-Repo: https://github.com/anilabhadatta/leetcode-scraper
                 Press 1: To setup config
                 Press 2: To select config[Default: 0]
                 Press 3: To get all cards url
