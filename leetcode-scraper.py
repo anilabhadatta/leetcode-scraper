@@ -758,7 +758,15 @@ def create_all_company_index_html(company_tags, headers):
                     '<table>{html}</table>'
                 </body>
                 </html>""")
-        scrape_question_data(slug, headers, html)
+        os.chdir("..")
+
+    for company in company_tags:
+        slug = company['slug']
+        create_folder(os.path.join(
+            save_path, "all_company_questions", slug))
+        with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w') as f:
+            html = f.read()
+            scrape_question_data(slug, headers, html)
         os.chdir("..")
 
 
