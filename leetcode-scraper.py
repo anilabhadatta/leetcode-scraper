@@ -8,6 +8,7 @@ import base64
 import os
 import sys
 import shutil
+import argparse
 
 OS_ROOT = os.path.expanduser('~')
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -795,7 +796,17 @@ if __name__ == '__main__':
     current_os = sys.platform
     url = "https://leetcode.com/graphql"
     selected_config = "0"
+    parser = argparse.ArgumentParser(description='Leetcode Scraper Options')
+
+    parser.add_argument('--proxy', type=str,
+                        help='Add rotating or static proxy username:password@ip:port')
     clear()
+    args = parser.parse_args()
+    if args.proxy:
+        os.environ['http_proxy'] = "http://"+args.proxy
+        os.environ['https_proxy'] = "http://"+args.proxy
+        print("Proxy set", requests.get(
+            "https://httpbin.org/ip").content)
 
     while True:
         try:
