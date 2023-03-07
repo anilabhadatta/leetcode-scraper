@@ -52,15 +52,17 @@ def select_config():
 
 def generate_config():
     clear()
+    base_config_path = create_base_config_dir()
     print('''
         Leave Blank and press Enter if you don't want to overwrite Previous Values
     ''')
     try:
         leetcode_cookie, cards_url_path, questions_url_path, save_path, save_images_locally, overwrite, company_tag_save_path = load_config()
     except Exception:
-        print('''
+        print(f'''
                     Config doesnt exist, Creating a new one.
                     Enter the paths for your config
+                    Config Save Folder: {os.path.join(base_config_path, f"config_{selected_config}.json")}
             ''')
     leetcode_cookie = input(
         "Enter the LEETCODE_SESSION Cookie Value: ") or leetcode_cookie
@@ -73,8 +75,6 @@ def generate_config():
     save_images_locally = bool(
         input("Save images locally as base64 T/F? ") == 'T')
     overwrite = bool(input("Overwrite existing files T/F? ") == 'T')
-
-    base_config_path = create_base_config_dir()
 
     with open(os.path.join(base_config_path, f"config_{selected_config}.json"), "w+") as config_file:
         json.dump({
@@ -687,9 +687,9 @@ def scrape_company_questions(choice):
             final_company_tags.append(
                 {"name": company_tag,
                  'slug': company_tag})
-    if choice == 9:
+    if choice == "9":
         create_all_company_index_html(final_company_tags, headers)
-    else:
+    elif choice == "10":
         for company in final_company_tags:
             slug = company['slug']
             create_folder(os.path.join(
@@ -709,9 +709,9 @@ def scrape_all_company_questions(choice):
     companies_tag_url = "https://leetcode.com/_next/data/5t12MQGNqIncLszIGV8Ce/problemset/all.json?slug=all"
     company_tags = json.loads(requests.get(url=companies_tag_url,
                                            headers=create_headers(), json={'slug': 'all'}).content)['pageProps']['dehydratedState']['queries'][0]['state']['data']['companyTags']
-    if choice == 7:
+    if choice == "7":
         create_all_company_index_html(company_tags, headers)
-    elif choice == 8:
+    elif choice == "8":
         for company in company_tags:
             slug = company['slug']
             create_folder(os.path.join(
@@ -831,7 +831,7 @@ if __name__ == '__main__':
 
     while True:
         try:
-            print("""Starting Leetcode-Scraper v1.2-stable, Built by Anilabha Datta
+            print("""Starting Leetcode-Scraper v1.3-stable, Built by Anilabha Datta
                 Github-Repo: https://github.com/anilabhadatta/leetcode-scraper
                 Press 1: To setup config
                 Press 2: To select config[Default: 0]
