@@ -53,16 +53,16 @@ def select_config():
 def generate_config():
     clear()
     base_config_path = create_base_config_dir()
-    print('''
+    print(f'''
         Leave Blank and press Enter if you don't want to overwrite Previous Values
+        Config Save Folder: {os.path.join(base_config_path, f"config_{selected_config}.json")}
     ''')
     try:
         leetcode_cookie, cards_url_path, questions_url_path, save_path, save_images_locally, overwrite, company_tag_save_path = load_config()
     except Exception:
-        print(f'''
+        print('''
                     Config doesnt exist, Creating a new one.
                     Enter the paths for your config
-                    Config Save Folder: {os.path.join(base_config_path, f"config_{selected_config}.json")}
             ''')
     leetcode_cookie = input(
         "Enter the LEETCODE_SESSION Cookie Value: ") or leetcode_cookie
