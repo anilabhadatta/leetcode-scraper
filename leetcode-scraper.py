@@ -175,7 +175,7 @@ def scrape_question_url():
                     question_title = question['title']
                     break
             if f"{question_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False and os.path.getsize(os.path.join(save_path, "questions", f"{question_title}.html")) > 0:
-                print("Already scraped")
+                print(f"Already scraped {question_title}.html")
                 continue
             print("Scraping question url: ", question_url)
             create_question_html(question_slug, headers)
@@ -226,7 +226,7 @@ def scrape_card_url():
                         item_title = item['title']
 
                         if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
-                            print("Already scraped")
+                            print(f"Already scraped{ item_id}-{item_title}.html")
                             continue
                         if f"{item_id}-{item_title}.html" not in os.listdir(os.path.join(save_path, "cards", card_slug)) and "questions" in os.listdir(save_path) and f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
                             print("Copying from questions folder", item_title)
@@ -725,18 +725,20 @@ def scrape_all_company_questions(choice):
 
 def create_all_company_index_html(company_tags, headers):
     print("Creating company index.html")
-    _, _, _, save_path, _, overwrite, _ = load_config()
+    _, _, _, save_path, _, overwrite, company_tag_save_path = load_config()
     cols = 10
     rows = len(company_tags)//10 + 1
     html = ''
     company_idx = 0
-    for _ in range(rows):
-        html += '<tr>'
-        for _ in range(cols):
-            if company_idx < len(company_tags):
-                html += f'''<td><a href="{company_tags[company_idx]['slug']}/index.html">{company_tags[company_idx]['slug']}</a></td>'''
-                company_idx += 1
-        html += '</tr>'
+    with open(company_tag_save_path, 'w') as f:
+        for _ in range(rows):
+            html += '<tr>'
+            for _ in range(cols):
+                if company_idx < len(company_tags):
+                    html += f'''<td><a href="{company_tags[company_idx]['slug']}/index.html">{company_tags[company_idx]['slug']}</a></td>'''
+                    f.write(f"https://leetcode.com/company/{company_tags[company_idx]['slug']}/\n")
+                    company_idx += 1
+            html += '</tr>'
 
     with open(os.path.join(save_path, "all_company_questions", "index.html"), 'w') as f:
         f.write(f"""<!DOCTYPE html>
@@ -748,26 +750,25 @@ def create_all_company_index_html(company_tags, headers):
                 </html>""")
     for company in company_tags:
         slug = company['slug']
-        print("Scrapping Index for ", slug)
-
         create_folder(os.path.join(
             save_path, "all_company_questions", slug))
+        if slug in os.listdir(os.path.join(
+                save_path, "all_company_questions")) and overwrite == False and "index.html" in os.listdir(os.path.join(
+                save_path, "all_company_questions", slug)):
+            print("Already Scraped", slug)
+            continue
+        print("Scrapping Index for ", slug)
         company_data = {"operationName": "getCompanyTag", "variables": {"slug": slug},
                         "query": "query getCompanyTag($slug: String!) {\n  companyTag(slug: $slug) {\n   questions {\n      ...questionFields\n          }\n    frequencies\n      }\n  }\nfragment questionFields on QuestionNode {\n questionId\n  titleSlug\n title\n  difficulty\n }\n"}
         company_response = json.loads(requests.post(
             url=url, headers=headers, json=company_data).content)['data']['companyTag']
         company_questions = company_response['questions']
         frequencies = json.loads(company_response['frequencies'])
-        if slug in os.listdir(os.path.join(
-                save_path, "all_company_questions")) and overwrite == False and len(os.listdir(os.path.join(
-                save_path, "all_company_questions", slug))) >= len(company_questions) + 1:
-            print("Already Scraped")
-            continue
         html = ''
-        for question in company_questions:
+        for idx, question in enumerate(company_questions, start=1):
             html += f'''<tr>
-                        <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{question['title']}.html</a></td>
-                        <td> Difficulty: {question['difficulty']} </td><td>Frequency: {frequencies[question['questionId']][-2]*10}</td>
+                        <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{idx}-{question['title']}.html</a></td>
+                        <td> Difficulty: {question['difficulty']} </td><td>Frequency: {'{:.2f}'.format(round(float(frequencies[question['questionId']][-2]*10), 2)) }</td>
                         <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}">Leetcode Url</a></td>
                         </tr>'''
         with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w') as f:
@@ -830,8 +831,10 @@ if __name__ == '__main__':
             "https://httpbin.org/ip").content)
 
     while True:
+        # print("Proxy set", requests.get(
+        #     "https://httpbin.org/ip").content)
         try:
-            print("""Starting Leetcode-Scraper v1.3-stable, Built by Anilabha Datta
+            print("""Starting Leetcode-Scraper v1.4-stable, Built by Anilabha Datta
                 Github-Repo: https://github.com/anilabhadatta/leetcode-scraper
                 Press 1: To setup config
                 Press 2: To select config[Default: 0]
