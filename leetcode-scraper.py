@@ -223,15 +223,16 @@ def scrape_card_url():
                         print("Scraping Item: ", item['title'])
                         item_id = item['id']
                         item_title = item['title']
-                        if "questions" in os.listdir(save_path) and f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
+
+                        if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
+                            print("Already scraped")
+                            continue
+                        if f"{item_id}-{item_title}.html" not in os.listdir(os.path.join(save_path, "cards", card_slug)) and "questions" in os.listdir(save_path) and f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
                             print("Copying from questions folder", item_title)
                             copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
                                 save_path, "cards", card_slug))
                             os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
                                 save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                            continue
-                        if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
-                            print("Already scraped")
                             continue
                         item_data = {"operationName": "GetItem", "variables": {"itemId": f"{item_id}"},
                                      "query": "query GetItem($itemId: String!) {\n  item(id: $itemId) {\n    id\n title\n  question {\n questionId\n   title\n  titleSlug\n }\n  article {\n id\n title\n }\n  htmlArticle {\n id\n  }\n  webPage {\n id\n  }\n  }\n }\n"}
