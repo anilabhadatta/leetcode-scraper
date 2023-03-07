@@ -675,7 +675,7 @@ def create_card_index_html(chapters, card_slug, headers):
                 </html>""")
 
 
-def scrape_company_questions():
+def scrape_company_questions(choice):
     leetcode_cookie, _, _, save_path, _, _, company_tag_save_path = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
@@ -687,11 +687,21 @@ def scrape_company_questions():
             final_company_tags.append(
                 {"name": company_tag,
                  'slug': company_tag})
-    create_all_company_index_html(final_company_tags, headers)
+    if choice == 9:
+        create_all_company_index_html(final_company_tags, headers)
+    else:
+        for company in final_company_tags:
+            slug = company['slug']
+            create_folder(os.path.join(
+                save_path, "all_company_questions", slug))
+            with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'r') as f:
+                html = f.read()
+                scrape_question_data(slug, headers, html)
+            os.chdir("..")
     os.chdir("..")
 
 
-def scrape_all_company_questions():
+def scrape_all_company_questions(choice):
     print("Scraping all company questions")
     leetcode_cookie, _, _, save_path, _, overwrite, _ = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
@@ -699,7 +709,17 @@ def scrape_all_company_questions():
     companies_tag_url = "https://leetcode.com/_next/data/5t12MQGNqIncLszIGV8Ce/problemset/all.json?slug=all"
     company_tags = json.loads(requests.get(url=companies_tag_url,
                                            headers=create_headers(), json={'slug': 'all'}).content)['pageProps']['dehydratedState']['queries'][0]['state']['data']['companyTags']
-    create_all_company_index_html(company_tags, headers)
+    if choice == 7:
+        create_all_company_index_html(company_tags, headers)
+    elif choice == 8:
+        for company in company_tags:
+            slug = company['slug']
+            create_folder(os.path.join(
+                save_path, "all_company_questions", slug))
+            with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'r') as f:
+                html = f.read()
+                scrape_question_data(slug, headers, html)
+            os.chdir("..")
     os.chdir('..')
 
 
@@ -758,15 +778,6 @@ def create_all_company_index_html(company_tags, headers):
                     '<table>{html}</table>'
                 </body>
                 </html>""")
-        os.chdir("..")
-
-    for company in company_tags:
-        slug = company['slug']
-        create_folder(os.path.join(
-            save_path, "all_company_questions", slug))
-        with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'r') as f:
-            html = f.read()
-            scrape_question_data(slug, headers, html)
         os.chdir("..")
 
 
@@ -828,8 +839,10 @@ if __name__ == '__main__':
                 Press 4: To get all question url
                 Press 5: To scrape card url
                 Press 6: To scrape question url
-                Press 7: To scrape all company questions
-                Press 8: To scrape selected company questions
+                Press 7: To scrape all company questions indexes
+                Press 8: To scrape all company questions
+                Press 9: To scrape selected company questions indexes
+                Press 10: To scrape selected company questions
                 Press any to quit
                 """)
             if previous_choice != "0":
@@ -848,10 +861,10 @@ if __name__ == '__main__':
                 scrape_card_url()
             elif choice == "6":
                 scrape_question_url()
-            elif choice == "7":
-                scrape_all_company_questions()
-            elif choice == "8":
-                scrape_company_questions()
+            elif choice == "7" or choice == "8":
+                scrape_all_company_questions(choice)
+            elif choice == "9" or choice == "10":
+                scrape_company_questions(choice)
             else:
                 break
         except KeyboardInterrupt:
