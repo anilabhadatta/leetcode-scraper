@@ -870,6 +870,8 @@ if __name__ == '__main__':
                 scrape_company_questions(choice)
             else:
                 break
+            if previous_choice != "0":
+                break
         except KeyboardInterrupt:
             if args.non_stop:
                 print("Keyboard Interrupt, Exiting")
