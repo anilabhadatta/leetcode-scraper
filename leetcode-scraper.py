@@ -343,81 +343,141 @@ def replace_iframes_with_codes(content_soup, headers):
 def attach_header_in_html():
     print("Attaching header in html")
     return r"""<head>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-            <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" rel="stylesheet"/>
-            <script crossorigin="anonymous" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js">
-            </script>
-            <script type="module" src="https://md-block.verou.me/md-block.js"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/prism.min.js"></script>
-            <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                    <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" rel="stylesheet"/>
+                    <script crossorigin="anonymous" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js">
+                    </script>
+                    <script src="https://md-block.verou.me/md-block.js" type="module">
+                    </script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/9000.0.1/prism.min.js">
+                    </script>
+                    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6">
+                    </script>
+                    <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script>-->
+                    <script async="" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML" type="text/javascript">
+                    MathJax.Hub.Config({
+                                        TeX: {
+                                            Macros: {
+                                            "exclude": "\\def\\exclude#1{}"
+                                            }
+                                        },
+                                        tex2jax: {
+                                            inlineMath: [["$", "$"], ["\\(", "\\)"]],
+                                            processEscapes: true,
+                                            processEnvironments: true,
+                                            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+                                        },
+                                        CommonHTML: {
+                                                            scale: 80
+                                                        },
+                                        });
 
-            <!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.0.1/es5/tex-mml-chtml.js"></script>-->
-            <script type="text/javascript" async
-                src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
-                  MathJax.Hub.Config({
-                    TeX: {
-                        Macros: {
-                        "exclude": "\\def\\exclude#1{}"
-                        }
-                    },
-                    tex2jax: {
-                        inlineMath: [["$", "$"], ["\\(", "\\)"]],
-                        processEscapes: true,
-                        processEnvironments: true,
-                        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
-                    },
-                    CommonHTML: {
-                                        scale: 80
-                                    },
-                    });
+                                        MathJax.Hub.Register.StartupHook("TeX Jax Ready", function() {
+                                        MathJax.Hub.Insert(MathJax.InputJax.TeX.Definitions.macros, {
+                                            exclude: "exclude"
+                                        });
+                                        });
+                    </script>
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                                                const carousel = document.querySelectorAll('.carousel');
+                                                console.log(carousel)
+                                                const items = Array.from(document.querySelectorAll('.carousel-item'));
+                                                console.log(items)
+                                                const maxWidth = Math.max(...items.map(item => item.querySelector('img').clientWidth));
+                                                console.log(maxWidth);
+                                                for (let i = 0; i < carousel.length; i++) {
+                                                    carousel[i].style.width = maxWidth + 'px';            }
+                                                
+                                                $( ".change" ).on("click", function() {
+                                                if( $( "body" ).hasClass( "dark" )) {
+                                                    $( "body" ).removeClass( "dark" );
+                                                    $( "div[style*='background: wheat;']" ).removeClass( "dark-banner" );
+                                                    $( "div[style*='background: beige;']" ).removeClass( "dark-banner-sq" );
+                                                    $("div[id*='v-pills-tabContent']").removeClass( "tab-content dark" );
+                                                    $("div[id*='v-pills-tabContent']").addClass( "tab-content" );
+                                                    $( ".change" ).text( "OFF" );
+                                                } else {
+                                                    $( "body" ).addClass( "dark" );
+                                                    $( "div[style*='background: wheat;']" ).addClass( "dark-banner" );
+                                                    $( "div[style*='background: beige;']" ).addClass( "dark-banner-sq" );
+                                                    $("div[id*='v-pills-tabContent']").addClass( "tab-content dark" );
+                                                    $( ".change" ).text( "ON" );
+                                                }
+                            });
+                                    });
+                    </script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+                    <style>
+                                body {
+                                    overflow-x: hidden;
+                                    background-color: lightblue;
+                                    left: 10% !important;
+                                    right: 10% !important;
+                                    position: absolute;
 
-                    MathJax.Hub.Register.StartupHook("TeX Jax Ready", function() {
-                    MathJax.Hub.Insert(MathJax.InputJax.TeX.Definitions.macros, {
-                        exclude: "exclude"
-                    });
-                    });
-    </script>
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                        const carousel = document.querySelectorAll('.carousel');
-                            console.log(carousel)
-                            const items = Array.from(document.querySelectorAll('.carousel-item'));
-                            console.log(items)
-                            const maxWidth = Math.max(...items.map(item => item.querySelector('img').clientWidth));
-                            console.log(maxWidth);
-                            for (let i = 0; i < carousel.length; i++) {
-                                carousel[i].style.width = maxWidth + 'px';            }
-                });
-                </script>
-            <style>
-                
-                body {
-                overflow-x: hidden;
-                background-color: lightblue;
-                left: 10% !important;
-                right: 10% !important;
-                position: absolute;
+                                    }
+                                    .similar-questions-container {
+                                        display: flex;
+                                        justify-content: space-between;
+                                        }
 
-                }
-                    .carousel-control-prev > span,
-                .carousel-control-next > span {
-                background-color: #007bff; 
-                border-color: #007bff; 
-                }
-                img {
-                    width: auto;
-                    height: auto;
-                    max-width: 100%;
-                    max-height: 100%;
-                }
-                
-            </style>
-            <style>
-                mjx-container, .mjx-chtml {
-                    display: inline !important;
-                }
-            </style>
-            </head>"""
+                                        .left::after {
+                                        content: "-";
+                                        margin-left: 5px;
+                                        }
+
+                                        .right::before {
+                                        content: "-";
+                                        margin-right: 5px;
+                                        }
+                                    .mode {
+                                        float:right;
+                                    }
+                                    .dark.tab-content{
+                                            background: repeating-linear-gradient(45deg, #130f0f, #3b3b3b4d 100px) !important;
+                                    }
+                                    .dark-banner-sq{
+                                            background-color: #3b3451b8 !important;
+                                    }
+                                    .tab-content{
+                                        background: cornsilk !important;
+                                    }
+                                    .change {
+                                        cursor: pointer;
+                                        border: 1px solid #555;
+                                        border-radius: 40%;
+                                        width: 20px;
+                                        text-align: center;
+                                        padding: 5px;
+                                        margin-left: 8px;
+                                    }
+                                    .dark{
+                                        background-color: #222;
+                                        color: #e6e6e6;
+                                    }
+                                    .dark-banner{
+                                        background-color: darkslategray !important;
+                                        color: #e6e6e6 !important;
+                                    }
+                                    .carousel-control-prev > span,
+                                    .carousel-control-next > span {
+                                    background-color: #007bff; 
+                                    border-color: #007bff; 
+                                    }
+                                    img {
+                                        width: auto;
+                                        height: auto;
+                                        max-width: 100%;
+                                        max-height: 100%;
+                                    }
+                    </style>
+                    <style>
+                    mjx-container, .mjx-chtml {
+                                        display: inline !important;
+                                    }
+                    </style>
+ """
 
 
 def find_slides_json(content):
@@ -471,9 +531,10 @@ def generate_similar_questions(similar_questions):
     if similar_questions:
         similar_questions = json.loads(similar_questions)
         if similar_questions != []:
-            similar_questions_html += f"""<div style="background: beige"><h5>Similar Questions</h5>"""
-            for similar_question in similar_questions:
-                similar_questions_html += f"""<td><p><a target="_blank" href="https://leetcode.com/problems/{similar_question['titleSlug']}">{similar_question['title']}</a> Difficulty: {similar_question['difficulty']} <a target="_blank" href="./{similar_question['title']}.html">Local Url</a></p></td>"""
+            similar_questions_html += f"""<div style="background: beige;"><h5>Similar Questions</h5>"""
+            for idx, similar_question in enumerate(similar_questions, start=1):
+                similar_questions_html += f"""<div class="similar-questions-container"><div class="left"><a target="_blank" href="https://leetcode.com/problems/{similar_question['titleSlug']}">{idx}-{similar_question['title']}</a></div><div class="right"> <span>{idx}-Difficulty: {similar_question['difficulty']} <a target="_blank" href="./{similar_question['title']}.html">Local Url</a></span></div></div>"""
+            similar_questions_html += f"""</div><br>"""
     return similar_questions_html
 
 
@@ -485,10 +546,11 @@ def get_question_company_tag_stats(company_tag_stats):
         if company_tag_stats != {}:
             company_tag_stats_html += f"""<div style="background: wheat;"><h5>Company Tag Stats</h5>"""
             for key, value in company_tag_stats.items():
-                company_tag_stats_html += f"""<h6>Years: {str(int(key)-1)}-{key}</h6>"""
+                company_tag_stats_html += f"""<h6>Years: {str(int(key)-1)}-{key}</h6><div>"""
                 for company_tag_stat in value:
-                    company_tag_stats_html += f"""<td>  ||  {company_tag_stat['name']}</td>"""
-                    company_tag_stats_html += f"""<td>: {company_tag_stat['timesEncountered']}</td>"""
+                    company_tag_stats_html += f"""<td>{company_tag_stat['name']}</td>"""
+                    company_tag_stats_html += f"""<td>: {company_tag_stat['timesEncountered']} • </td>"""
+                company_tag_stats_html += "</div><br>"
     return company_tag_stats_html
 
 
@@ -499,7 +561,12 @@ def get_question_data(item_content, headers):
         question_data = {"operationName": "GetQuestion", "variables": {"titleSlug": question_title_slug},
                          "query": "query GetQuestion($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n title\n submitUrl\n similarQuestions\n difficulty\n  companyTagStats\n codeDefinition\n    content\n    hints\n    solution {\n      content\n   }\n   }\n }\n"}
         question_content = json.loads(requests.post(
-            url=url, headers=headers, json=question_data).content)['data']['question']
+            url=url, headers=headers, json=question_data).content)
+        try:
+            question_content = question_content['data']['question']
+        except:
+            print(question_content)
+            raise Exception("Error in getting question data")
         question_title = question_content['title']
         question = question_content['content']
         difficulty = question_content['difficulty']
@@ -524,8 +591,12 @@ def get_question_data(item_content, headers):
                 hint_content += f"<div> > {hint}</div>"
         else:
             hint_content = "No Hints"
-        return f"""<h3 class="question__url"><a target="_blank" href="{question_url}">{question_title}</a></h3><p> Difficulty: {difficulty}</p>
+        return f""" <div class="mode">
+                    Dark mode:  <span class="change">OFF</span>
+                    </div>
+                    <h3 class="question__url"><a target="_blank" href="{question_url}">{question_title}</a></h3><p> Difficulty: {difficulty}</p>
                     <div>{company_tag_stats}</div>
+                    <br>
                     <div>{similar_questions}</div>
                     <h5>Question</h5>
                     <md-block class="question__content">{question}</md-block>
@@ -536,7 +607,10 @@ def get_question_data(item_content, headers):
                     <h3>Solution</h3>
                     <md-block class="question__solution">{solution}</md-block>
                 """, question_title
-    return "", ""
+    return """<div class="mode">
+                    Dark mode:             
+                    <span class="change">OFF</span>
+                </div>""", ""
 
 
 def create_card_index_html(chapters, card_slug, headers):
@@ -744,5 +818,13 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             input("Press Enter to continue")
         except Exception as e:
-            print("Main Exception", e)
+            print("""
+            Error Occured, Possible Causes:
+            1. Check your internet connection
+            2. Leetcode Session Cookie might have expired 
+            3. Check your config file
+            4. Too many requests, try again after some time or use proxies
+            5. Leetcode might have changed their api queries (Create an issue on github)
+            """)
+            print("Exception info: ", e)
             input("Press Enter to continue")
