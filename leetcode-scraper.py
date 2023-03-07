@@ -202,7 +202,8 @@ def scrape_card_url():
     leetcode_cookie, cards_url_path, _, save_path, _, overwrite, _ = load_config()
     headers = create_headers(leetcode_cookie)
     create_folder(os.path.join(save_path, "cards"))
-
+    if "questions" not in os.listdir(save_path):
+        os.mkdir(os.path.join(save_path, "questions"))
     with open(cards_url_path, "r") as f:
         card_urls = f.readlines()
         for card_url in card_urls:
@@ -222,7 +223,14 @@ def scrape_card_url():
                         print("Scraping Item: ", item['title'])
                         item_id = item['id']
                         item_title = item['title']
-                        if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False and os.path.getsize(os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html")) > 0:
+                        if "questions" in os.listdir(save_path) and f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
+                            print("Copying from questions folder", item_title)
+                            copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
+                                save_path, "cards", card_slug))
+                            os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                            continue
+                        if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
                             print("Already scraped")
                             continue
                         item_data = {"operationName": "GetItem", "variables": {"itemId": f"{item_id}"},
@@ -273,7 +281,11 @@ def fix_image_urls(content_soup):
     for image in images:
         splitted_image_src = image['src'].split('/')
         if ".." in splitted_image_src:
-            img_url = f"https://leetcode.com/explore/{'/'.join(splitted_image_src[1:])}"
+            index = 0
+            for idx in range(len(splitted_image_src)-1):
+                if splitted_image_src[idx] == ".." and splitted_image_src[idx+1] != "..":
+                    index = idx+1
+            img_url = f"https://leetcode.com/explore/{'/'.join(splitted_image_src[index:])}"
         else:
             img_url = image['src']
         if save_images_locally:
@@ -395,6 +407,8 @@ def attach_header_in_html():
                                                     $( "div[style*='background: wheat;']" ).removeClass( "dark-banner" );
                                                     $( "div[style*='background: beige;']" ).removeClass( "dark-banner-sq" );
                                                     $("div[id*='v-pills-tabContent']").removeClass( "tab-content dark" );
+                                                    $("table").removeClass( "table-color-dark" );
+                                                    $("table").addClass( "table-color" );
                                                     $("div[id*='v-pills-tabContent']").addClass( "tab-content" );
                                                     $( ".change" ).text( "OFF" );
                                                 } else {
@@ -402,6 +416,8 @@ def attach_header_in_html():
                                                     $( "div[style*='background: wheat;']" ).addClass( "dark-banner" );
                                                     $( "div[style*='background: beige;']" ).addClass( "dark-banner-sq" );
                                                     $("div[id*='v-pills-tabContent']").addClass( "tab-content dark" );
+                                                    $("table").removeClass( "table-color" );
+                                                    $("table").addClass( "table-color-dark" );
                                                     $( ".change" ).text( "ON" );
                                                 }
                             });
@@ -565,7 +581,6 @@ def get_question_data(item_content, headers):
         try:
             question_content = question_content['data']['question']
         except:
-            print(question_content)
             raise Exception("Error in getting question data")
         question_title = question_content['title']
         question = question_content['content']
@@ -608,8 +623,7 @@ def get_question_data(item_content, headers):
                     <md-block class="question__solution">{solution}</md-block>
                 """, question_title
     return """<div class="mode">
-                    Dark mode:             
-                    <span class="change">OFF</span>
+                    Dark mode:  <span class="change">OFF</span>
                 </div>""", ""
 
 
@@ -784,7 +798,7 @@ if __name__ == '__main__':
 
     while True:
         try:
-            print("""Starting Leetcode-Scraper v1.0-stable, Built by Anilabha Datta
+            print("""Starting Leetcode-Scraper v1.1-stable, Built by Anilabha Datta
                 Github-Repo: https://github.com/anilabhadatta/leetcode-scraper
                 Press 1: To setup config
                 Press 2: To select config[Default: 0]
