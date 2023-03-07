@@ -797,11 +797,13 @@ if __name__ == '__main__':
     url = "https://leetcode.com/graphql"
     selected_config = "0"
     parser = argparse.ArgumentParser(description='Leetcode Scraper Options')
-
+    parser.add_argument('--non-stop', type=bool,
+                        help='True/False - Will run non stop, will retry if any error occurs')
     parser.add_argument('--proxy', type=str,
                         help='Add rotating or static proxy username:password@ip:port')
     clear()
     args = parser.parse_args()
+    previous_choice = "0"
     if args.proxy:
         os.environ['http_proxy'] = "http://"+args.proxy
         os.environ['https_proxy'] = "http://"+args.proxy
@@ -810,7 +812,7 @@ if __name__ == '__main__':
 
     while True:
         try:
-            print("""Starting Leetcode-Scraper v1.1-stable, Built by Anilabha Datta
+            print("""Starting Leetcode-Scraper v1.2-stable, Built by Anilabha Datta
                 Github-Repo: https://github.com/anilabhadatta/leetcode-scraper
                 Press 1: To setup config
                 Press 2: To select config[Default: 0]
@@ -822,7 +824,10 @@ if __name__ == '__main__':
                 Press 8: To scrape selected company questions
                 Press any to quit
                 """)
-            choice = input("Enter your choice: ")
+            if previous_choice != "0":
+                print("Previous Choice: ", previous_choice)
+            else:
+                choice = input("Enter your choice: ")
             if choice == "1":
                 generate_config()
             elif choice == "2":
@@ -842,7 +847,9 @@ if __name__ == '__main__':
             else:
                 break
         except KeyboardInterrupt:
-            input("Press Enter to continue")
+            if args.non_stop:
+                print("Keyboard Interrupt, Exiting")
+                break
         except Exception as e:
             print("""
             Error Occured, Possible Causes:
@@ -853,4 +860,8 @@ if __name__ == '__main__':
             5. Leetcode might have changed their api queries (Create an issue on github)
             """)
             print("Exception info: ", e)
+            if args.non_stop:
+                print("Retrying")
+                previous_choice = choice
+                continue
             input("Press Enter to continue")
