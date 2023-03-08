@@ -874,7 +874,6 @@ def manual_convert_images_to_base64():
                     res_soup = fix_image_urls(soup, True)
                 with open(os.path.join(root, file), "w") as f:
                     f.write(res_soup.prettify())
-                input(f"Enter to continue {os.path.join(root, file)}")
     
 
 if __name__ == '__main__':
