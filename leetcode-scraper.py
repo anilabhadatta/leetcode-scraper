@@ -172,9 +172,9 @@ def scrape_question_url():
             question_slug = question_url.split("/")[-2]
             for question in all_questions:
                 if question['titleSlug'] == question_slug:
-                    question_title = question['title']
+                    question_title = re.sub(r'[:?|></\\]', replace_filename, question['title'])
                     break
-            if f"{question_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False and os.path.getsize(os.path.join(save_path, "questions", f"{question_title}.html")) > 0:
+            if f"{question_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
                 print(f"Already scraped {question_title}.html")
                 continue
             print("Scraping question url: ", question_url)
@@ -183,6 +183,7 @@ def scrape_question_url():
 
 
 def create_question_html(question_slug, headers):
+    _, _, _, _, save_images_locally, _, _ = load_config()
     item_content = {"question": {'titleSlug': question_slug}}
     content = """<body>"""
     question_content, question_title = get_question_data(item_content, headers)
@@ -194,7 +195,7 @@ def create_question_html(question_slug, headers):
     content_soup = BeautifulSoup(content, 'html.parser')
     content_soup = replace_iframes_with_codes(content_soup, headers)
     content_soup = place_solution_slides(content_soup, slides_json)
-    content_soup = fix_image_urls(content_soup)
+    content_soup = fix_image_urls(content_soup, save_images_locally)
     with open(f"{question_title}.html", 'w', encoding="utf-8") as f:
         f.write(content_soup.prettify())
 
@@ -223,10 +224,29 @@ def scrape_card_url():
                     for item in subcategory['items']:
                         print("Scraping Item: ", item['title'])
                         item_id = item['id']
-                        item_title = item['title']
+                        item_title = re.sub(r'[:?|></\\]', replace_filename, item['title'])
 
                         if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
-                            print(f"Already scraped{ item_id}-{item_title}.html")
+                            print(f"Already scraped {item_id}-{item_title}.html")
+                            if f"{item_title}.html" in os.path.join(save_path, "questions") and os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) > os.path.getsize(os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
+                                copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
+                                save_path, "cards", card_slug))
+                                try:
+                                    os.remove(os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                                except:
+                                    pass
+                                os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                            else:
+                                copy_html(os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html"), os.path.join(save_path, "questions"))
+                                try:
+                                    os.remove(os.path.join(save_path, "questions", f"{item_title}.html"))
+                                except:
+                                    pass
+                                os.rename(os.path.join(save_path, "questions", f"{item_id}-{item_title}.html"), os.path.join(
+                               save_path, "questions", f"{item_title}.html"))
                             continue
                         if f"{item_id}-{item_title}.html" not in os.listdir(os.path.join(save_path, "cards", card_slug)) and "questions" in os.listdir(save_path) and f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
                             print("Copying from questions folder", item_title)
@@ -248,6 +268,7 @@ def scrape_card_url():
 
 
 def create_card_html(item_content, item_title, item_id, headers):
+    _, _, _, _, save_images_locally, _, _ = load_config()
     content = """<body>"""
     question_content, _ = get_question_data(item_content, headers)
     content += question_content
@@ -260,7 +281,7 @@ def create_card_html(item_content, item_title, item_id, headers):
     content_soup = BeautifulSoup(content, 'html.parser')
     content_soup = replace_iframes_with_codes(content_soup, headers)
     content_soup = place_solution_slides(content_soup, slides_json)
-    content_soup = fix_image_urls(content_soup)
+    content_soup = fix_image_urls(content_soup, save_images_locally)
     with open(f"{item_id}-{item_title}.html", "w", encoding="utf-8") as f:
         f.write(content_soup.prettify())
 
@@ -276,25 +297,24 @@ def load_image_in_b64(img_url):
     return f"data:image/{img_ext};base64,{decoded_string}"
 
 
-def fix_image_urls(content_soup):
+def fix_image_urls(content_soup, save_images_locally):
     print("Fixing image urls")
-    _, _, _, _, save_images_locally, _, _ = load_config()
     images = content_soup.find_all('img')
     for image in images:
-        splitted_image_src = image['src'].split('/')
-        if ".." in splitted_image_src:
-            index = 0
-            for idx in range(len(splitted_image_src)-1):
-                if splitted_image_src[idx] == ".." and splitted_image_src[idx+1] != "..":
-                    index = idx+1
-            img_url = f"https://leetcode.com/explore/{'/'.join(splitted_image_src[index:])}"
-        else:
-            img_url = image['src']
-        if save_images_locally:
-            image['src'] = load_image_in_b64(img_url)
-        else:
-            image['src'] = img_url
-        # image['style'] = 'width: 100%; height: auto; object-fit: contain;'
+        if "base64" not in image['src']:
+            splitted_image_src = image['src'].split('/')
+            if ".." in splitted_image_src:
+                index = 0
+                for idx in range(len(splitted_image_src)-1):
+                    if splitted_image_src[idx] == ".." and splitted_image_src[idx+1] != "..":
+                        index = idx+1
+                img_url = f"https://leetcode.com/explore/{'/'.join(splitted_image_src[index:])}"
+            else:
+                img_url = image['src']
+            if save_images_locally:
+                image['src'] = load_image_in_b64(img_url)
+            else:
+                image['src'] = img_url
     return content_soup
 
 
@@ -597,7 +617,7 @@ def get_question_data(item_content, headers):
             question_content = question_content['data']['question']
         except:
             raise Exception("Error in getting question data")
-        question_title = question_content['title']
+        question_title = re.sub(r'[:?|></\\]', replace_filename, question_content['title'])
         question = question_content['content']
         difficulty = question_content['difficulty']
         company_tag_stats = get_question_company_tag_stats(
@@ -656,6 +676,7 @@ def create_card_index_html(chapters, card_slug, headers):
                     <br>
         """
         for item in chapter['items']:
+            item['title'] = re.sub(r'[:?|></\\]', replace_filename, item['title'])
             body += f"""<a href="{item['id']}-{item['title']}.html">{item['id']}-{item['title']}</a><br>"""
         body += "</div>"
     chapter_html = f"""<div class="container">
@@ -688,7 +709,7 @@ def create_card_index_html(chapters, card_slug, headers):
                 </html>""")
 
 
-def scrape_company_questions(choice):
+def scrape_selected_company_questions(choice):
     leetcode_cookie, _, _, save_path, _, _, company_tag_save_path = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
@@ -721,7 +742,7 @@ def get_next_data_id():
 
 def scrape_all_company_questions(choice):
     print("Scraping all company questions")
-    leetcode_cookie, _, _, save_path, _, overwrite, _ = load_config()
+    leetcode_cookie, _, _, save_path, _, _, _ = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
     build_id = get_next_data_id()
@@ -785,6 +806,7 @@ def create_all_company_index_html(company_tags, headers):
         frequencies = json.loads(company_response['frequencies'])
         html = ''
         for idx, question in enumerate(company_questions, start=1):
+            question['title'] = re.sub(r'[:?|></\\]', replace_filename, question['title'])
             html += f'''<tr>
                         <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{idx}-{question['title']}.html</a></td>
                         <td> Difficulty: {question['difficulty']} </td><td>Frequency: {'{:.2f}'.format(round(float(frequencies[question['questionId']][-2]*10), 2)) }</td>
@@ -809,13 +831,19 @@ def scrape_question_data(slug, headers, html):
     if "questions" not in os.listdir(save_path):
         os.mkdir(os.path.join(save_path, "questions"))
     for question_title in question_titles:
+        question_title['title'] = re.sub(r'[:?|></\\]', replace_filename, question_title['title'])
         if question_title['title'] in os.listdir(os.path.join(save_path, "all_company_questions", slug)) and overwrite == False:
-            print("Already Scraped", question_title['title'])
-            copy_html(os.path.join(save_path, "all_company_questions",
-                                   slug, question_title['title']), os.path.join(
-                save_path, "questions"))
+            print("Already Scraped Company", question_title['title'], slug)
+            if question_title['title'] in os.listdir(os.path.join(save_path, "questions")) and os.path.getsize(os.path.join(save_path, "questions", question_title['title'])) > os.path.getsize(os.path.join(save_path, "all_company_questions",
+                                   slug, question_title['title'])):
+                copy_html(os.path.join(save_path, "questions", question_title['title']), os.path.join(
+                save_path, "all_company_questions", slug))
+            else:
+                copy_html(os.path.join(save_path, "all_company_questions",
+                                    slug, question_title['title']), os.path.join(
+                    save_path, "questions"))
             continue
-        if "questions" in os.listdir(save_path) and question_title['title'] in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
+        if question_title['title'] in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
             print("Copying from questions folder", question_title['title'])
             copy_html(os.path.join(save_path, "questions", question_title['title']), os.path.join(
                 save_path, "all_company_questions", slug))
@@ -830,6 +858,24 @@ def scrape_question_data(slug, headers, html):
 def copy_html(src, dst):
     shutil.copy(src, dst)
 
+
+def replace_filename(str):
+    numDict = {':': ' ', '?': ' ', '|': ' ', '>': ' ', '<': ' ', '/': ' ', '\\': ' '}
+    return numDict[str.group()]
+
+
+def manual_convert_images_to_base64():
+    root_dir = input("Enter path of the folder where html are located: ")
+    for root, dirs, files in os.walk(root_dir):
+        for file in files:
+            if file.endswith('.html'):
+                with open(os.path.join(root, file), "r") as f:
+                    soup = BeautifulSoup(f.read(), 'html.parser')
+                    res_soup = fix_image_urls(soup, True)
+                with open(os.path.join(root, file), "w") as f:
+                    f.write(res_soup.prettify())
+                input(f"Enter to continue {os.path.join(root, file)}")
+    
 
 if __name__ == '__main__':
     current_os = sys.platform
@@ -853,7 +899,7 @@ if __name__ == '__main__':
         # print("Proxy set", requests.get(
         #     "https://httpbin.org/ip").content)
         try:
-            print("""Starting Leetcode-Scraper v1.4-stable, Built by Anilabha Datta
+            print("""Starting Leetcode-Scraper v1.5-stable, Built by Anilabha Datta
                 Github-Repo: https://github.com/anilabhadatta/leetcode-scraper
                 Press 1: To setup config
                 Press 2: To select config[Default: 0]
@@ -865,6 +911,7 @@ if __name__ == '__main__':
                 Press 8: To scrape all company questions
                 Press 9: To scrape selected company questions indexes
                 Press 10: To scrape selected company questions
+                Press 11: To convert images to base64 using os.walk
                 Press any to quit
                 """)
             if previous_choice != "0":
@@ -886,7 +933,9 @@ if __name__ == '__main__':
             elif choice == "7" or choice == "8":
                 scrape_all_company_questions(choice)
             elif choice == "9" or choice == "10":
-                scrape_company_questions(choice)
+                scrape_selected_company_questions(choice)
+            elif choice =="11":
+                manual_convert_images_to_base64()
             else:
                 break
             if previous_choice != "0":
