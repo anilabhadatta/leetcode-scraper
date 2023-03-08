@@ -301,6 +301,13 @@ def fix_image_urls(content_soup):
 def place_solution_slides(content_soup, slides_json):
     print("Placing solution slides")
     slide_p_tags = content_soup.select("p:contains('/Documents/')")
+    temp = []
+    for slide_p_tag in slide_p_tags:
+        if len(slide_p_tag.find_all("p")) == 0 and ".json" in str(slide_p_tag) and slide_p_tag not in temp:
+            # print(slide_p_tag, type(slide_p_tag))
+            temp.append(slide_p_tag)
+    slide_p_tags = temp
+    # print(slide_p_tags)
     for slide_idx, slide_p_tag in enumerate(slide_p_tags):
         slides_html = f"""<div id="carouselExampleControls-{slide_idx}" class="carousel slide" data-bs-ride="carousel">
                         <div  class="carousel-inner">"""
@@ -510,6 +517,7 @@ def find_slides_json(content):
             "/".join(links.strip().split(".json")[-2].split("/")[1:]) + ".json"
         slides_json.append(json.loads(requests.get(
             url=slide_img_url, headers=create_headers()).content)['timeline'])
+    # print(slides_json)
     return slides_json
 
 
