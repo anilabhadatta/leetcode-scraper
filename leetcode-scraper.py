@@ -713,13 +713,19 @@ def scrape_company_questions(choice):
             os.chdir("..")
     os.chdir("..")
 
+def get_next_data_id():
+    next_data = requests.get(url="https://leetcode.com/_next/", headers=create_headers()).content
+    next_data_soup = BeautifulSoup(next_data, "html.parser")
+    next_data_id = json.loads(next_data_soup.select("script[id='__NEXT_DATA__']")[0].text)['buildId']
+    return next_data_id
 
 def scrape_all_company_questions(choice):
     print("Scraping all company questions")
     leetcode_cookie, _, _, save_path, _, overwrite, _ = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
-    companies_tag_url = "https://leetcode.com/_next/data/87g9v_hX4H0hOQap33G1i/problemset/all.json?slug=all"
+    build_id = get_next_data_id()
+    companies_tag_url = f"https://leetcode.com/_next/data/{build_id}/problemset/all.json?slug=all"
     company_tags = json.loads(requests.get(url=companies_tag_url,
                                            headers=create_headers(), json={'slug': 'all'}).content)['pageProps']['dehydratedState']['queries'][0]['state']['data']['companyTags']
     if choice == "7":
