@@ -244,28 +244,29 @@ def scrape_card_url():
                         item_id = item['id']
                         item_title = re.sub(r'[:?|></\\]', replace_filename, item['title'])
 
-                        if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False and f"{item_title}.html" in os.path.join(save_path, "questions"):
+                        if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
                             print(f"Already scraped {item_id}-{item_title}.html")
-                            if os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) > os.path.getsize(os.path.join(
-                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
-                                copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
-                                save_path, "cards", card_slug))
-                                try:
-                                    os.remove(os.path.join(
-                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                                except:
-                                    pass
-                                os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
-                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                            elif os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) < os.path.getsize(os.path.join(
-                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
-                                copy_html(os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html"), os.path.join(save_path, "questions"))
-                                try:
-                                    os.remove(os.path.join(save_path, "questions", f"{item_title}.html"))
-                                except:
-                                    pass
-                                os.rename(os.path.join(save_path, "questions", f"{item_id}-{item_title}.html"), os.path.join(
-                            save_path, "questions", f"{item_title}.html"))
+                            if f"{item_title}.html" in os.path.join(save_path, "questions"):
+                                if os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) > os.path.getsize(os.path.join(
+                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
+                                    copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
+                                    save_path, "cards", card_slug))
+                                    try:
+                                        os.remove(os.path.join(
+                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                                    except:
+                                        pass
+                                    os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
+                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                                elif os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) < os.path.getsize(os.path.join(
+                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
+                                    copy_html(os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html"), os.path.join(save_path, "questions"))
+                                    try:
+                                        os.remove(os.path.join(save_path, "questions", f"{item_title}.html"))
+                                    except:
+                                        pass
+                                    os.rename(os.path.join(save_path, "questions", f"{item_id}-{item_title}.html"), os.path.join(
+                                save_path, "questions", f"{item_title}.html"))
                             continue
                         if f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
                             print("Copying from questions folder", item_title)
@@ -693,6 +694,7 @@ def create_card_index_html(chapters, card_slug, headers):
                     <br>
                     <h3>{chapter['title']}</h3>
                     {chapter['description']}
+                    <br>
         """
         for item in chapter['items']:
             item['title'] = re.sub(r'[:?|></\\]', replace_filename, item['title'])
