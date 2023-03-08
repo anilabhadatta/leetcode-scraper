@@ -213,68 +213,76 @@ def scrape_card_url():
     create_folder(os.path.join(save_path, "cards"))
     if "questions" not in os.listdir(save_path):
         os.mkdir(os.path.join(save_path, "questions"))
-    with open(cards_url_path, "r") as f:
-        with open(os.path.join(save_path, "cards", "index.html"), 'w+') as main_index:
-            main_index_html = ""
+    # Creating Index for Card Folder
+    with open(os.path.join(save_path, "cards", "index.html"), 'w') as main_index:
+        main_index_html = ""
+        with open(cards_url_path, "r") as f:
             card_urls = f.readlines()
             for card_url in card_urls:
                 card_url = card_url.strip()
-                print("Scraping card url: ", card_url)
                 card_slug = card_url.split("/")[-2]
-                main_index_html += f"""<a href={card_slug}/index.html>{card_slug}</a><br>"""
-                card_data = {"operationName": "GetChaptersWithItems", "variables": {"cardSlug": card_slug},
-                            "query": "query GetChaptersWithItems($cardSlug: String!) {\n  chapters(cardSlug: $cardSlug) {\n    ...ExtendedChapterDetail\n   }\n}\n\nfragment ExtendedChapterDetail on ChapterNode {\n  id\n  title\n  slug\n description\n items {\n    id\n    title\n  }\n }\n"}
-                chapters = json.loads(requests.post(url=url, headers=headers,
-                                                    json=card_data).content)['data']['chapters']
-                if chapters:
-                    create_folder(os.path.join(save_path, "cards", card_slug))
-                    create_card_index_html(chapters, card_slug, headers)
-                    for subcategory in chapters:
-                        print("Scraping subcategory: ", subcategory['title'])
-                        for item in subcategory['items']:
-                            print("Scraping Item: ", item['title'])
-                            item_id = item['id']
-                            item_title = re.sub(r'[:?|></\\]', replace_filename, item['title'])
+                main_index_html += f"""<a href={card_slug}/index.html>{card_slug}</a><br>"""        
+        main_index.write(main_index_html)
+    # Creating HTML for each cards topics
+    with open(cards_url_path, "r") as f:
+        card_urls = f.readlines()
+        for card_url in card_urls:
+            card_url = card_url.strip()
+            print("Scraping card url: ", card_url)
+            card_slug = card_url.split("/")[-2]
+            card_data = {"operationName": "GetChaptersWithItems", "variables": {"cardSlug": card_slug},
+                        "query": "query GetChaptersWithItems($cardSlug: String!) {\n  chapters(cardSlug: $cardSlug) {\n    ...ExtendedChapterDetail\n   }\n}\n\nfragment ExtendedChapterDetail on ChapterNode {\n  id\n  title\n  slug\n description\n items {\n    id\n    title\n  }\n }\n"}
+            chapters = json.loads(requests.post(url=url, headers=headers,
+                                                json=card_data).content)['data']['chapters']
+            if chapters:
+                create_folder(os.path.join(save_path, "cards", card_slug))
+                create_card_index_html(chapters, card_slug, headers)
+                for subcategory in chapters:
+                    print("Scraping subcategory: ", subcategory['title'])
+                    for item in subcategory['items']:
+                        print("Scraping Item: ", item['title'])
+                        item_id = item['id']
+                        item_title = re.sub(r'[:?|></\\]', replace_filename, item['title'])
 
-                            if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
-                                print(f"Already scraped {item_id}-{item_title}.html")
-                                if f"{item_title}.html" in os.path.join(save_path, "questions") and os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) > os.path.getsize(os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
-                                    copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
-                                    save_path, "cards", card_slug))
-                                    try:
-                                        os.remove(os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                                    except:
-                                        pass
-                                    os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                                else:
-                                    copy_html(os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html"), os.path.join(save_path, "questions"))
-                                    try:
-                                        os.remove(os.path.join(save_path, "questions", f"{item_title}.html"))
-                                    except:
-                                        pass
-                                    os.rename(os.path.join(save_path, "questions", f"{item_id}-{item_title}.html"), os.path.join(
-                                save_path, "questions", f"{item_title}.html"))
-                                continue
-                            if f"{item_id}-{item_title}.html" not in os.listdir(os.path.join(save_path, "cards", card_slug)) and f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
-                                print("Copying from questions folder", item_title)
+                        if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False and f"{item_title}.html" in os.path.join(save_path, "questions"):
+                            print(f"Already scraped {item_id}-{item_title}.html")
+                            if os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) > os.path.getsize(os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
                                 copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
-                                    save_path, "cards", card_slug))
+                                save_path, "cards", card_slug))
+                                try:
+                                    os.remove(os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                                except:
+                                    pass
                                 os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                                continue
-                            item_data = {"operationName": "GetItem", "variables": {"itemId": f"{item_id}"},
-                                        "query": "query GetItem($itemId: String!) {\n  item(id: $itemId) {\n    id\n title\n  question {\n questionId\n   title\n  titleSlug\n }\n  article {\n id\n title\n }\n  htmlArticle {\n id\n  }\n  webPage {\n id\n  }\n  }\n }\n"}
-                            item_content = json.loads(requests.post(url=url, headers=headers,
-                                                                    json=item_data).content)['data']['item']
-                            if item_content == None:
-                                break
-                            create_card_html(
-                                item_content, item_title, item_id, headers)
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                            elif os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) < os.path.getsize(os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
+                                copy_html(os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html"), os.path.join(save_path, "questions"))
+                                try:
+                                    os.remove(os.path.join(save_path, "questions", f"{item_title}.html"))
+                                except:
+                                    pass
+                                os.rename(os.path.join(save_path, "questions", f"{item_id}-{item_title}.html"), os.path.join(
+                            save_path, "questions", f"{item_title}.html"))
+                            continue
+                        if f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
+                            print("Copying from questions folder", item_title)
+                            copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
+                                save_path, "cards", card_slug))
+                            os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
+                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
+                            continue
+                        item_data = {"operationName": "GetItem", "variables": {"itemId": f"{item_id}"},
+                                    "query": "query GetItem($itemId: String!) {\n  item(id: $itemId) {\n    id\n title\n  question {\n questionId\n   title\n  titleSlug\n }\n  article {\n id\n title\n }\n  htmlArticle {\n id\n  }\n  webPage {\n id\n  }\n  }\n }\n"}
+                        item_content = json.loads(requests.post(url=url, headers=headers,
+                                                                json=item_data).content)['data']['item']
+                        if item_content == None:
+                            break
+                        create_card_html(
+                            item_content, item_title, item_id, headers)
                 os.chdir("..")
-            main_index.write(main_index_html)
     os.chdir('..')
 
 
@@ -310,9 +318,9 @@ def load_image_in_b64(img_url):
 
 def fix_image_urls(content_soup, save_images_locally):
     print("Fixing image urls")
-    images = content_soup.find_all('img')
+    images = content_soup.select('img')
     for image in images:
-        if "base64" not in image['src']:
+        if image.has_attr('src') and "base64" not in image['src']:
             splitted_image_src = image['src'].split('/')
             if ".." in splitted_image_src:
                 index = 0
@@ -681,41 +689,26 @@ def create_card_index_html(chapters, card_slug, headers):
                                             json=intro_data).content)['data']['card']
     body = ""
     for chapter in chapters:
-        body += f"""<div class="card">
+        body += f"""
+                    <br>
                     <h3>{chapter['title']}</h3>
                     {chapter['description']}
-                    <br>
         """
         for item in chapter['items']:
             item['title'] = re.sub(r'[:?|></\\]', replace_filename, item['title'])
             body += f"""<a href="{item['id']}-{item['title']}.html">{item['id']}-{item['title']}</a><br>"""
-        body += "</div>"
-    chapter_html = f"""<div class="container">
-                        <div class="row">
-                            <div class="col-md-12">
-                                {body}
-                            </div>
-                        </div>
-                    </div>"""
     with open("index.html", 'w') as f:
         f.write(f"""<!DOCTYPE html>
                 <html lang="en">
                 {attach_header_in_html()}
                 <body>
-                    <div class="container">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h1 class="card-title">{introduction['title']}</h1>
-                                        <p class="card-text">{introduction['introduction']}</p>
-                                        <br>
-                                    </div>
-                                    {chapter_html}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="mode">
+                    Dark mode:  <span class="change">OFF</span>
+                    </div>"
+                    <h1 class="card-title">{introduction['title']}</h1>
+                    <p class="card-text">{introduction['introduction']}</p>
+                    <br>
+                    {body}
                 </body>
                 </html>""")
 
