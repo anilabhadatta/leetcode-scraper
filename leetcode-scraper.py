@@ -309,6 +309,8 @@ def place_solution_slides(content_soup, slides_json):
     slide_p_tags = temp
     # print(slide_p_tags)
     for slide_idx, slide_p_tag in enumerate(slide_p_tags):
+        if slides_json[slide_idx] == []:
+            continue
         slides_html = f"""<div id="carouselExampleControls-{slide_idx}" class="carousel slide" data-bs-ride="carousel">
                         <div  class="carousel-inner">"""
         for img_idx, img_links in enumerate(slides_json[slide_idx]):
@@ -515,8 +517,11 @@ def find_slides_json(content):
     for links in slides_json_list:
         slide_img_url = "https://leetcode.com/explore/" + \
             "/".join(links.strip().split(".json")[-2].split("/")[1:]) + ".json"
-        slides_json.append(json.loads(requests.get(
-            url=slide_img_url, headers=create_headers()).content)['timeline'])
+        try:
+            slides_json.append(json.loads(requests.get(
+                url=slide_img_url, headers=create_headers()).content)['timeline'])
+        except:
+            slides_json.append([])
     # print(slides_json)
     return slides_json
 
@@ -714,7 +719,7 @@ def scrape_all_company_questions(choice):
     leetcode_cookie, _, _, save_path, _, overwrite, _ = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
-    companies_tag_url = "https://leetcode.com/_next/data/5t12MQGNqIncLszIGV8Ce/problemset/all.json?slug=all"
+    companies_tag_url = "https://leetcode.com/_next/data/87g9v_hX4H0hOQap33G1i/problemset/all.json?slug=all"
     company_tags = json.loads(requests.get(url=companies_tag_url,
                                            headers=create_headers(), json={'slug': 'all'}).content)['pageProps']['dehydratedState']['queries'][0]['state']['data']['companyTags']
     if choice == "7":
