@@ -11,3 +11,6 @@ To-Do:
 Styling improvements are required
 Manual Testing and Checking is required for fixing bugs if found any
 ```
+
+Code quality should not be judged as i wrote it long ago, Will refactor it in next commits, please do test it and see if it works.
+I have not written a better README but the app can be self-explanatory. Just make sure to create a config file before scraping at first launch.
