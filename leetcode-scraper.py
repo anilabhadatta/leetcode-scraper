@@ -425,7 +425,7 @@ def attach_header_in_html():
                                             }
                                         },
                                         tex2jax: {
-                                            inlineMath: [["$", "$"], ["\\(", "\\)"]],
+                                            inlineMath: [["$", "$"], ["\\(", "\\)"], ["$$", "$$"], ["\\[", "\\]"]],
                                             processEscapes: true,
                                             processEnvironments: true,
                                             skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
@@ -751,10 +751,11 @@ def scrape_all_company_questions(choice):
     leetcode_cookie, _, _, save_path, _, _, _ = load_config()
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
-    build_id = get_next_data_id()
-    companies_tag_url = f"https://leetcode.com/_next/data/{build_id}/problemset/all.json?slug=all"
-    company_tags = json.loads(requests.get(url=companies_tag_url,
-                                           headers=create_headers(), json={'slug': 'all'}).content)['pageProps']['dehydratedState']['queries'][0]['state']['data']['companyTags']
+    print("Header generated")
+    company_data = {"operationName": "questionCompanyTags", "variables": {},
+                        "query": "query questionCompanyTags {\n  companyTags {\n    name\n    slug\n    questionCount\n  }\n}\n"}
+    company_tags = json.loads(requests.post(url=url, headers=headers,
+                                                json=company_data).content)['data']['companyTags']
     if choice == "7":
         create_all_company_index_html(company_tags, headers)
     elif choice == "8":
@@ -804,18 +805,30 @@ def create_all_company_index_html(company_tags, headers):
             print("Already Scraped", slug)
             continue
         print("Scrapping Index for ", slug)
-        company_data = {"operationName": "getCompanyTag", "variables": {"slug": slug},
-                        "query": "query getCompanyTag($slug: String!) {\n  companyTag(slug: $slug) {\n   questions {\n      ...questionFields\n          }\n    frequencies\n      }\n  }\nfragment questionFields on QuestionNode {\n questionId\n  titleSlug\n title\n  difficulty\n }\n"}
+        company_data = {"operationName": "favoriteDetailV2ForCompany", "variables": {"favoriteSlug": slug},
+                        "query": "query favoriteDetailV2ForCompany($favoriteSlug: String!) {\n  favoriteDetailV2(favoriteSlug: $favoriteSlug) {\n    questionNumber\n    collectCount\n    generatedFavoritesInfo {\n      defaultFavoriteSlug\n      categoriesToSlugs {\n        categoryName\n        favoriteSlug\n        displayName\n      }\n    }\n  }\n}\n    "}
         company_response = json.loads(requests.post(
-            url=url, headers=headers, json=company_data).content)['data']['companyTag']
-        company_questions = company_response['questions']
-        frequencies = json.loads(company_response['frequencies'])
+            url=url, headers=headers, json=company_data).content)['data']['favoriteDetailV2']
+        total_questions = company_response['questionNumber']
+        print("Total Questions", total_questions)
+        categories_to_slugs = company_response['generatedFavoritesInfo']['categoriesToSlugs']
+        favorite_slug = slug + "-all"
+        for category in categories_to_slugs:
+            if "all" in category['categoryName']:
+                favorite_slug = category['favoriteSlug']
+                break
+        print("Favorite Slug", favorite_slug)
+        company_questions_data = {"operationName": "favoriteQuestionList", "variables": {"favoriteSlug": favorite_slug, "filter": {"positionRoleTagSlug": "", "skip": 0, "limit": total_questions}},
+                        "query": "query favoriteQuestionList($favoriteSlug: String!, $filter: FavoriteQuestionFilterInput) {\n  favoriteQuestionList(favoriteSlug: $favoriteSlug, filter: $filter) {\n    questions {\n      difficulty\n      id\n      paidOnly\n      questionFrontendId\n      status\n      title\n      titleSlug\n      translatedTitle\n      isInMyFavorites\n      frequency\n      topicTags {\n        name\n        nameTranslated\n        slug\n      }\n    }\n    totalLength\n    hasMore\n  }\n}\n    "}
+        company_questions_response = json.loads(requests.post(
+            url=url, headers=headers, json=company_questions_data).content)['data']['favoriteQuestionList']["questions"]
+        print("Sucessfully Scraped Index for ", slug)
         html = ''
-        for idx, question in enumerate(company_questions, start=1):
+        for idx, question in enumerate(company_questions_response, start=1):
             question['title'] = re.sub(r'[:?|></\\]', replace_filename, question['title'])
             html += f'''<tr>
                         <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{idx}-{question['title']}.html</a></td>
-                        <td> Difficulty: {question['difficulty']} </td><td>Frequency: {'{:.2f}'.format(round(float(frequencies[question['questionId']][-2]*10), 2)) }</td>
+                        <td> Difficulty: {question['difficulty']} </td><td>Frequency: {'{:.2f}'.format(round(float(question['frequency']), 2)) }</td>
                         <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}">Leetcode Url</a></td>
                         </tr>'''
         with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w') as f:
