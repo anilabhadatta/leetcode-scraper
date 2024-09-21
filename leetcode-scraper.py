@@ -3,6 +3,7 @@ import json
 from requests.structures import CaseInsensitiveDict
 from bs4 import BeautifulSoup
 import markdown2
+import cloudscraper
 import re
 import base64
 import os
@@ -112,7 +113,9 @@ def create_headers(leetcode_cookie=""):
     headers['cookie'] = "LEETCODE_SESSION=" + \
         leetcode_cookie if leetcode_cookie != "" else ""
     headers["referer"] = "https://leetcode.com/"
-    headers["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.56"
+    headers["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36 Edg/129.0.0.0"
+    headers["accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+    # headers["accept-encoding"] = "gzip, deflate, br, zstd"
     return headers
 
 
@@ -311,8 +314,9 @@ def load_image_in_b64(img_url):
     img_ext = img_url.split('.')[-1]
     if img_ext == "svg":
         img_ext = "svg+xml"
-    encoded_string = base64.b64encode(requests.get(
-        url=img_url, headers=create_headers()).content)
+    scraper = cloudscraper.create_scraper()
+    img_data = scraper.get(url=img_url).content
+    encoded_string = base64.b64encode(img_data)
     decoded_string = encoded_string.decode('utf-8')
     return f"data:image/{img_ext};base64,{decoded_string}"
 
@@ -557,10 +561,14 @@ def find_slides_json(content):
     for links in slides_json_list:
         slide_img_url = "https://leetcode.com/explore/" + \
             "/".join(links.strip().split(".json")[-2].split("/")[1:]) + ".json"
+        print(slide_img_url)
         try:
-            slides_json.append(json.loads(requests.get(
-                url=slide_img_url, headers=create_headers()).content)['timeline'])
-        except:
+            scraper = cloudscraper.create_scraper()
+            slides_data = scraper.get(
+                url=slide_img_url).content
+            slides_json.append(json.loads(slides_data)['timeline'])
+        except Exception as e:
+            print("Error in getting slide json: ", e)
             slides_json.append([])
     # print(slides_json)
     return slides_json
