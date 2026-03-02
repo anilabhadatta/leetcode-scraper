@@ -183,28 +183,116 @@ def scrape_question_url():
             print("Scraping question url: ", question_url)
             create_question_html(question_slug, headers)
             
+    meta_path = os.path.join(save_path, "questions", "meta.json")
+    all_meta = {}
+    if os.path.exists(meta_path):
+        with open(meta_path, "r", encoding="utf-8") as mf:
+            all_meta = json.load(mf)
+    index_data = []
+    questions_folder = os.path.join(save_path, "questions")
+    for fname in sorted(os.listdir(questions_folder)):
+        if fname.endswith('.html') and fname != 'index.html':
+            title = fname[:-5]
+            slug = next((q['titleSlug'] for q in all_questions
+                         if re.sub(r'[:?|></\\]', replace_filename, q['title']) == title), None)
+            if slug and slug in all_meta:
+                index_data.append(all_meta[slug])
+            else:
+                index_data.append({'title': title, 'slug': slug or '', 'difficulty': '',
+                                   'companies': [], 'file': fname,
+                                   'url': f'https://leetcode.com/problems/{slug}/' if slug else ''})
+    index_json = json.dumps(index_data, ensure_ascii=False)
     with open(os.path.join(save_path, "questions", "index.html"), 'w', encoding="utf-8") as main_index:
-        main_index_html = ""
-        for idx, files in enumerate(os.listdir(os.path.join(save_path, "questions")),start=1):
-            if "index.html" not in files:
-                main_index_html += f"""<a href="{files}">{idx}-{files}</a><br>"""
         main_index.write(f"""<!DOCTYPE html>
 <html lang="en">
 {attach_header_in_html()}
 <body>
 <div class="mode">Dark mode: <span class="change">OFF</span></div>
-<h2>Questions Index</h2>
-{main_index_html}
+<h2>Questions - <span id="qCount"></span></h2>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;align-items:center">
+  <input class="lc-search" id="qSearch" placeholder="Search title or company..." style="max-width:320px" type="text"/>
+  <div style="display:flex;gap:4px">
+    <button class="diff-btn active" data-diff="all">All</button>
+    <button class="diff-btn" data-diff="Easy">Easy</button>
+    <button class="diff-btn" data-diff="Medium">Medium</button>
+    <button class="diff-btn" data-diff="Hard">Hard</button>
+  </div>
+</div>
+<table class="table table-bordered table-hover table-color" id="qTable">
+  <thead><tr>
+    <th style="width:40px">#</th>
+    <th class="sortable" data-key="title" style="cursor:pointer">Title &#x2195;</th>
+    <th class="sortable" data-key="difficulty" style="cursor:pointer;width:100px;text-align:center">Difficulty &#x2195;</th>
+    <th>Companies</th>
+    <th style="width:50px">Link</th>
+  </tr></thead>
+  <tbody id="qBody"></tbody>
+</table>
+<script>
+var DATA = {index_json};
+var sortKey = null, sortDir = 1, diffFilter = 'all';
+function renderTable() {{
+    var q = document.getElementById('qSearch').value.toLowerCase();
+    var filtered = DATA.filter(function(d) {{
+        var matchQ = !q || d.title.toLowerCase().includes(q) ||
+                     (d.companies || []).join(' ').toLowerCase().includes(q);
+        var matchD = diffFilter === 'all' || d.difficulty === diffFilter;
+        return matchQ && matchD;
+    }});
+    if (sortKey) {{
+        filtered.sort(function(a, b) {{
+            var av = (a[sortKey] || '').toLowerCase();
+            var bv = (b[sortKey] || '').toLowerCase();
+            return av < bv ? -sortDir : av > bv ? sortDir : 0;
+        }});
+    }}
+    var tbody = document.getElementById('qBody');
+    tbody.innerHTML = filtered.map(function(d, i) {{
+        var dc = d.difficulty === 'Easy' ? 'badge-easy'
+               : d.difficulty === 'Medium' ? 'badge-medium'
+               : d.difficulty === 'Hard' ? 'badge-hard' : '';
+        var comps = (d.companies || []).map(function(c) {{
+            return '<span class="company-tag">' + c + '</span>';
+        }}).join('');
+        var link = d.url ? '<a target="_blank" href="' + d.url + '">&#x1F517;</a>' : '';
+        return '<tr>' +
+            '<td style="text-align:center">' + (i+1) + '</td>' +
+            '<td><a href="' + d.file + '">' + d.title + '</a></td>' +
+            '<td style="text-align:center"><span class="' + dc + '">' + (d.difficulty || '&#x2014;') + '</span></td>' +
+            '<td>' + comps + '</td>' +
+            '<td style="text-align:center">' + link + '</td>' +
+            '</tr>';
+    }}).join('');
+    document.getElementById('qCount').textContent = filtered.length + ' / ' + DATA.length;
+}}
+document.getElementById('qSearch').addEventListener('input', renderTable);
+document.querySelectorAll('.diff-btn').forEach(function(btn) {{
+    btn.addEventListener('click', function() {{
+        diffFilter = this.dataset.diff;
+        document.querySelectorAll('.diff-btn').forEach(function(b) {{ b.classList.remove('active'); }});
+        this.classList.add('active');
+        renderTable();
+    }});
+}});
+document.querySelectorAll('.sortable').forEach(function(th) {{
+    th.addEventListener('click', function() {{
+        var k = this.dataset.key;
+        if (sortKey === k) {{ sortDir *= -1; }} else {{ sortKey = k; sortDir = 1; }}
+        renderTable();
+    }});
+}});
+renderTable();
+</script>
 </body>
 </html>""")
     os.chdir('..')
 
 
 def create_question_html(question_slug, headers):
-    _, _, _, _, save_images_locally, _, _ = load_config()
+    _, _, _, save_path, save_images_locally, _, _ = load_config()
     item_content = {"question": {'titleSlug': question_slug}}
     content = """<body>"""
-    question_content, question_title = get_question_data(item_content, headers)
+    question_content, question_title, meta = get_question_data(item_content, headers)
     content += question_content
     content += """</body>"""
     slides_json = find_slides_json(content)
@@ -216,6 +304,18 @@ def create_question_html(question_slug, headers):
     content_soup = fix_image_urls(content_soup, save_images_locally)
     with open(f"{question_title}.html", 'w', encoding="utf-8") as f:
         f.write(content_soup.prettify())
+    meta_path = os.path.join(save_path, "questions", "meta.json")
+    try:
+        all_meta = {}
+        if os.path.exists(meta_path):
+            with open(meta_path, "r", encoding="utf-8") as mf:
+                all_meta = json.load(mf)
+        all_meta[question_slug] = meta
+        with open(meta_path, "w", encoding="utf-8") as mf:
+            json.dump(all_meta, mf, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print("Error updating meta.json: ", e)
+    return meta
 
 
 def scrape_card_url():
@@ -309,7 +409,7 @@ def scrape_card_url():
 def create_card_html(item_content, item_title, item_id, headers):
     _, _, _, _, save_images_locally, _, _ = load_config()
     content = """<body>"""
-    question_content, _ = get_question_data(item_content, headers)
+    question_content, _, _ = get_question_data(item_content, headers)
     content += question_content
     content += get_article_data(item_content, item_title, headers)
     content += get_html_article_data(item_content, item_title, headers)
@@ -610,6 +710,23 @@ def attach_header_in_html():
                                                  border:1px solid #ccc; width:100%; max-width:400px;
                                                  font-size:1em; }
                                     .dark .lc-search { background:#333; color:#e6e6e6; border-color:#555; }
+                                    /* ── Difficulty filter buttons ── */
+                                    .diff-btn { padding:4px 12px; border-radius:4px; border:1px solid #ccc;
+                                                background:#f5f5f5; color:#333; cursor:pointer; font-size:0.85em; transition:all .15s; }
+                                    .diff-btn.active { color:#fff; border-color:transparent; }
+                                    .diff-btn[data-diff="all"].active  { background:#555; }
+                                    .diff-btn[data-diff="Easy"].active   { background:#00b8a3; }
+                                    .diff-btn[data-diff="Medium"].active { background:#ffc01e; color:#333; }
+                                    .diff-btn[data-diff="Hard"].active   { background:#ef4743; }
+                                    .dark .diff-btn { background:#333; color:#ccc; border-color:#555; }
+                                    .dark .diff-btn[data-diff="Easy"].active   { background:#007d72; }
+                                    .dark .diff-btn[data-diff="Medium"].active { background:#b38600; color:#eee; }
+                                    .dark .diff-btn[data-diff="Hard"].active   { background:#b02e2c; }
+                                    /* ── Inline company tags ── */
+                                    .company-tag { display:inline-block; padding:1px 7px; margin:2px 1px;
+                                                   border-radius:3px; font-size:0.77em;
+                                                   background:#e8f0fe; color:#174ea6; border:1px solid #c5d3f0; }
+                                    .dark .company-tag { background:#2a3a5c; color:#a8c4ff; border-color:#3a5080; }
                     </style>
                     <style>
                     mjx-container, .mjx-chtml {
@@ -622,23 +739,59 @@ def attach_header_in_html():
 def find_slides_json(content):
     print("Finding slides json")
     word = "/Documents/"
-    all_slides_json_list = re.compile(
-        fr".*{word}.*", re.MULTILINE).findall(content)
-    slides_json_list = [x for x in all_slides_json_list if ".json" in x]
+    # Match the full !?!...!?! marker blocks that contain a /Documents/ path
+    slides_json_list = re.findall(
+        fr"\!\?\!.*?{word}.*?\!\?\!",
+        content,
+        flags=re.IGNORECASE | re.MULTILINE
+    )
+    # Fallback: bare lines with /Documents/ (no markers) that contain .json
+    if not slides_json_list:
+        all_lines = re.findall(fr".*?{word}.*?\.json.*", content, re.IGNORECASE | re.MULTILINE)
+        slides_json_list = all_lines
     slides_json = []
-    for links in slides_json_list:
-        slide_img_url = "https://leetcode.com/explore/" + \
-            "/".join(links.strip().split(".json")[-2].split("/")[1:]) + ".json"
-        print(slide_img_url)
-        try:
-            scraper = cloudscraper.create_scraper()
-            slides_data = scraper.get(
-                url=slide_img_url).content
-            slides_json.append(json.loads(slides_data)['timeline'])
-        except Exception as e:
-            print("Error in getting slide json: ", e)
+    if not slides_json_list:
+        return slides_json
+    scraper = cloudscraper.create_scraper()
+    for slide_name in slides_json_list:
+        raw = slide_name.strip()
+        # Extract path from inside !?!...:line,col!?! markers
+        marker_match = re.search(r'\!\?\!(.*?)(?::\d+,\d+)?\!\?\!', raw)
+        if marker_match:
+            raw = marker_match.group(1).strip()
+        if ".json" not in raw:
+            print(f"Skipping — no .json in path: {slide_name!r}")
             slides_json.append([])
-    # print(slides_json)
+            continue
+        # Parse: e.g. "../Documents/4/s1.json" or "/Documents/01_LIS.json"
+        base_name = raw.split(".json")[0]
+        parts = base_name.split("/")
+        drop_dots = [p for p in parts if p and p != ".."]  # remove empty & ".." segments
+        # drop_dots: ['Documents', '4', 's1'] or ['Documents', '01_LIS']
+        if not drop_dots or drop_dots[0].lower() != "documents":
+            print(f"Skipping unrecognised slide path: {slide_name!r}")
+            slides_json.append([])
+            continue
+        documents = drop_dots[0]                                # "Documents"
+        rest = "/".join(drop_dots[1:])                          # "4/s1" or "01_LIS"
+        filename_var1 = f"{documents.lower()}/{rest}"           # "documents/4/s1"
+        filename_var2 = f"{documents.lower()}/{rest.lower()}"   # fully lowercased fallback
+        base_url = "https://assets.leetcode.com/static_assets/media/"
+        url1 = base_url + filename_var1 + ".json"
+        url2 = base_url + filename_var2 + ".json"
+        data = []
+        for attempt_url in [url1, url2]:
+            try:
+                print(f"Trying slide url: {attempt_url}")
+                resp = scraper.get(url=attempt_url, timeout=15)
+                parsed = json.loads(resp.content)
+                if 'timeline' in parsed:
+                    data = parsed['timeline']
+                    break
+                print(f"No 'timeline' key in response from {attempt_url}")
+            except Exception as e:
+                print(f"Failed for {attempt_url}: {e}")
+        slides_json.append(data)
     return slides_json
 
 
@@ -716,8 +869,16 @@ def get_question_data(item_content, headers):
         question_title = re.sub(r'[:?|></\\]', replace_filename, question_content['title'])
         question = question_content['content']
         difficulty = question_content['difficulty']
-        company_tag_stats = get_question_company_tag_stats(
-            question_content['companyTagStats'])
+        raw_cts = question_content['companyTagStats']
+        top_companies = []
+        if raw_cts:
+            try:
+                cts = json.loads(raw_cts)
+                recent = cts.get("1", cts.get("2", cts.get("3", [])))
+                top_companies = [c['name'] for c in sorted(recent, key=lambda x: -x['timesEncountered'])[:8]]
+            except Exception:
+                pass
+        company_tag_stats = get_question_company_tag_stats(raw_cts)
         similar_questions = generate_similar_questions(
             question_content['similarQuestions'])
         question_url = "https://leetcode.com" + \
@@ -752,10 +913,17 @@ def get_question_data(item_content, headers):
                     <md-block class="question__hints">{hint_content}</md-block>
                     <h3>Solution</h3>
                     <md-block class="question__solution">{solution}</md-block>
-                """, question_title
+                """, question_title, {
+            'title': question_title,
+            'slug': question_title_slug,
+            'difficulty': difficulty,
+            'companies': top_companies,
+            'url': question_url,
+            'file': question_title + '.html'
+        }
     return """<div class="mode">
                     Dark mode:  <span class="change">OFF</span>
-                </div>""", ""
+                </div>""", "", {}
 
 
 def create_card_index_html(chapters, card_slug, headers):
