@@ -77,7 +77,7 @@ def generate_config():
         input("Save images locally as base64 T/F? ") == 'T')
     overwrite = bool(input("Overwrite existing files T/F? ") == 'T')
 
-    with open(os.path.join(base_config_path, f"config_{selected_config}.json"), "w+") as config_file:
+    with open(os.path.join(base_config_path, f"config_{selected_config}.json"), "w+", encoding="utf-8") as config_file:
         json.dump({
             "leetcode_cookie": leetcode_cookie,
             "cards_url_path": cards_url_path,
@@ -93,7 +93,7 @@ def load_config():
     config_path = os.path.join(OS_ROOT, ".leetcode-scraper")
     if ".leetcode-scraper" not in os.listdir(OS_ROOT) or f"config_{selected_config}.json" not in os.listdir(config_path):
         raise Exception("No config found, Please create one")
-    with open(os.path.join(config_path, f"config_{selected_config}.json"), "r") as config_file:
+    with open(os.path.join(config_path, f"config_{selected_config}.json"), "r", encoding="utf-8") as config_file:
         config = json.load(config_file)
     if len(config) != 7:
         raise Exception("Config is corrupted, Please recreate the config")
@@ -127,7 +127,7 @@ def get_all_cards_url():
         "num": 1000}, "query": "query GetCategories($categorySlug: String, $num: Int) {\n  categories(slug: $categorySlug) {\n  slug\n    cards(num: $num) {\n ...CardDetailFragment\n }\n  }\n  }\n\nfragment CardDetailFragment on CardNode {\n   slug\n  categorySlug\n  }\n"}
     cards = json.loads(requests.post(url=url, headers=headers,
                                      json=cards_data).content)['data']['categories']
-    with open(cards_url_path, "w") as f:
+    with open(cards_url_path, "w", encoding="utf-8") as f:
         for category_card in cards:
             if category_card['slug'] != "featured":
                 for card in category_card['cards']:
@@ -156,7 +156,7 @@ def get_all_questions_url(self_function=True):
 
 
 def write_questions_to_file(all_questions, questions_url_path):
-    with open(questions_url_path, "w") as f:
+    with open(questions_url_path, "w", encoding="utf-8") as f:
         for question in all_questions:
             question_url = "https://leetcode.com/problems/" + \
                 question['titleSlug'] + "/\n"
@@ -168,7 +168,7 @@ def scrape_question_url():
     headers = create_headers(leetcode_cookie)
     all_questions = get_all_questions_url(self_function=False)
     create_folder(os.path.join(save_path, "questions"))
-    with open(questions_url_path, "r") as f:
+    with open(questions_url_path, "r", encoding="utf-8") as f:
         question_urls = f.readlines()
         for idx, question_url in enumerate(question_urls, start=1):
             question_url = question_url.strip()
@@ -183,7 +183,7 @@ def scrape_question_url():
             print("Scraping question url: ", question_url)
             create_question_html(question_slug, headers)
             
-    with open(os.path.join(save_path, "questions", "index.html"), 'w') as main_index:
+    with open(os.path.join(save_path, "questions", "index.html"), 'w', encoding="utf-8") as main_index:
         main_index_html = ""
         for idx, files in enumerate(os.listdir(os.path.join(save_path, "questions")),start=1):
             if "index.html" not in files:
@@ -217,9 +217,9 @@ def scrape_card_url():
     if "questions" not in os.listdir(save_path):
         os.mkdir(os.path.join(save_path, "questions"))
     # Creating Index for Card Folder
-    with open(os.path.join(save_path, "cards", "index.html"), 'w') as main_index:
+    with open(os.path.join(save_path, "cards", "index.html"), 'w', encoding="utf-8") as main_index:
         main_index_html = ""
-        with open(cards_url_path, "r") as f:
+        with open(cards_url_path, "r", encoding="utf-8") as f:
             card_urls = f.readlines()
             for card_url in card_urls:
                 card_url = card_url.strip()
@@ -227,7 +227,7 @@ def scrape_card_url():
                 main_index_html += f"""<a href={card_slug}/index.html>{card_slug}</a><br>"""        
         main_index.write(main_index_html)
     # Creating HTML for each cards topics
-    with open(cards_url_path, "r") as f:
+    with open(cards_url_path, "r", encoding="utf-8") as f:
         card_urls = f.readlines()
         for card_url in card_urls:
             card_url = card_url.strip()
@@ -707,7 +707,7 @@ def create_card_index_html(chapters, card_slug, headers):
         for item in chapter['items']:
             item['title'] = re.sub(r'[:?|></\\]', replace_filename, item['title'])
             body += f"""<a href="{item['id']}-{item['title']}.html">{item['id']}-{item['title']}</a><br>"""
-    with open("index.html", 'w') as f:
+    with open("index.html", 'w', encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>
                 <html lang="en">
                 {attach_header_in_html()}
@@ -728,7 +728,7 @@ def scrape_selected_company_questions(choice):
     create_folder(os.path.join(save_path, "all_company_questions"))
     headers = create_headers(leetcode_cookie)
     final_company_tags = []
-    with open(company_tag_save_path, 'r') as f:
+    with open(company_tag_save_path, 'r', encoding="utf-8") as f:
         company_tags = f.readlines()
         for company_tag in company_tags:
             company_tag = company_tag.replace("\n", "").split("/")[-2]
@@ -742,7 +742,7 @@ def scrape_selected_company_questions(choice):
             slug = company['slug']
             create_folder(os.path.join(
                 save_path, "all_company_questions", slug))
-            with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'r') as f:
+            with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'r', encoding="utf-8") as f:
                 html = f.read()
                 scrape_question_data(slug, headers, html)
             os.chdir("..")
@@ -771,7 +771,7 @@ def scrape_all_company_questions(choice):
             slug = company['slug']
             create_folder(os.path.join(
                 save_path, "all_company_questions", slug))
-            with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'r') as f:
+            with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'r', encoding="utf-8") as f:
                 html = f.read()
                 scrape_question_data(slug, headers, html)
             os.chdir("..")
@@ -785,7 +785,7 @@ def create_all_company_index_html(company_tags, headers):
     rows = len(company_tags)//10 + 1
     html = ''
     company_idx = 0
-    with open(company_tag_save_path, 'w') as f:
+    with open(company_tag_save_path, 'w', encoding="utf-8") as f:
         for _ in range(rows):
             html += '<tr>'
             for _ in range(cols):
@@ -795,7 +795,7 @@ def create_all_company_index_html(company_tags, headers):
                     company_idx += 1
             html += '</tr>'
 
-    with open(os.path.join(save_path, "all_company_questions", "index.html"), 'w') as f:
+    with open(os.path.join(save_path, "all_company_questions", "index.html"), 'w', encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>
                 <html lang="en">
                 <head> </head>
@@ -839,7 +839,7 @@ def create_all_company_index_html(company_tags, headers):
                         <td> Difficulty: {question['difficulty']} </td><td>Frequency: {'{:.2f}'.format(round(float(question['frequency']), 2)) }</td>
                         <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}">Leetcode Url</a></td>
                         </tr>'''
-        with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w') as f:
+        with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w', encoding="utf-8") as f:
             f.write(f"""<!DOCTYPE html>
                 <html lang="en">
                 <head> </head>
@@ -896,10 +896,10 @@ def manual_convert_images_to_base64():
     for root, dirs, files in os.walk(root_dir):
         for file in files:
             if file.endswith('.html'):
-                with open(os.path.join(root, file), "r") as f:
+                with open(os.path.join(root, file), "r", encoding="utf-8") as f:
                     soup = BeautifulSoup(f.read(), 'html.parser')
                     res_soup = fix_image_urls(soup, True)
-                with open(os.path.join(root, file), "w") as f:
+                with open(os.path.join(root, file), "w", encoding="utf-8") as f:
                     f.write(res_soup.prettify())
     
 
