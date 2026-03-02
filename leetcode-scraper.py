@@ -254,7 +254,7 @@ function renderTable() {{
         var comps = (d.companies || []).map(function(c) {{
             return '<span class="company-tag">' + c + '</span>';
         }}).join('');
-        var link = d.url ? '<a target="_blank" href="' + d.url + '">&#x1F517;</a>' : '';
+        var link = d.url ? '<a target="_blank" href="' + d.url + '"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>' : '';
         return '<tr>' +
             '<td style="text-align:center">' + (i+1) + '</td>' +
             '<td><a href="' + d.file + '">' + d.title + '</a></td>' +
@@ -727,6 +727,67 @@ def attach_header_in_html():
                                                    border-radius:3px; font-size:0.77em;
                                                    background:#e8f0fe; color:#174ea6; border:1px solid #c5d3f0; }
                                     .dark .company-tag { background:#2a3a5c; color:#a8c4ff; border-color:#3a5080; }
+                                    /* ── Company stat pill ── */
+                                    .co-pill { display:inline-flex; align-items:center; gap:4px;
+                                               padding:3px 10px 3px 8px; margin:3px 3px;
+                                               border-radius:20px; font-size:0.82em; font-weight:500;
+                                               background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe;
+                                               text-decoration:none; }
+                                    .co-pill .co-cnt { background:#3730a3; color:#fff;
+                                                        border-radius:10px; padding:0 6px;
+                                                        font-size:0.78em; font-weight:700; }
+                                    .dark .co-pill { background:#1e2a4a; color:#93c5fd; border-color:#2d4a7a; }
+                                    .dark .co-pill .co-cnt { background:#2563eb; }
+                                    /* ── Stat period heading ── */
+                                    .stat-period { display:inline-block; font-size:0.78em; font-weight:600;
+                                                   padding:2px 10px; border-radius:4px; margin-bottom:6px;
+                                                   background:#fef3c7; color:#92400e; border:1px solid #fcd34d; }
+                                    .dark .stat-period { background:#3a2a0a; color:#fcd34d; border-color:#92400e; }
+                                    .stat-section { margin-bottom:10px; padding:8px 10px;
+                                                    border-radius:6px; background:#fffbeb;
+                                                    border:1px solid #fde68a; }
+                                    .dark .stat-section { background:#1c1a0f; border-color:#4a3a0a; }
+                                    /* ── Similar questions table ── */
+                                    .sim-q-table { width:100%; border-collapse:collapse; font-size:0.9em; }
+                                    .sim-q-table td { padding:5px 8px; border-bottom:1px solid #e5e7eb; vertical-align:middle; }
+                                    .dark .sim-q-table td { border-color:#374151; }
+                                    .sim-q-table tr:last-child td { border-bottom:none; }
+                                    .sim-q-table tr:hover td { background:rgba(0,0,0,0.03); }
+                                    .dark .sim-q-table tr:hover td { background:rgba(255,255,255,0.04); }
+                                    /* ── Question sections ── */
+                                    .q-section { margin:18px 0; padding:14px 18px;
+                                                 border-radius:8px; background:#fff;
+                                                 border:1px solid #e5e7eb;
+                                                 overflow:hidden; box-sizing:border-box; }
+                                    .dark .q-section { background:#1e1e1e; border-color:#333; }
+                                    .q-section h5, .q-section h3 { margin-top:0; margin-bottom:10px;
+                                                                    font-size:1em; font-weight:700;
+                                                                    text-transform:uppercase; letter-spacing:.04em;
+                                                                    color:#6b7280; }
+                                    .dark .q-section h5, .dark .q-section h3 { color:#9ca3af; }
+                                    /* ── md-block containment ── */
+                                    md-block { display:block; width:100%; box-sizing:border-box;
+                                               overflow-wrap:break-word; word-break:break-word; }
+                                    md-block p, md-block li, md-block pre { max-width:100%; }
+                                    /* ── Code block ── */
+                                    .code-wrap { position:relative; }
+                                    .code-wrap pre { background:#1e1e2e; color:#cdd6f4;
+                                                     padding:16px; border-radius:6px;
+                                                     overflow-x:auto; font-size:0.88em;
+                                                     line-height:1.6; margin:0; }
+                                    .dark .code-wrap pre { background:#111122; }
+                                    /* ── Hint items ── */
+                                    .hint-item { padding:8px 12px; margin:6px 0;
+                                                 border-left:3px solid #6366f1;
+                                                 background:#f5f3ff; border-radius:0 6px 6px 0;
+                                                 font-size:0.92em; }
+                                    .dark .hint-item { background:#1a1830; border-color:#4f46e5; }
+                                    /* ── Question title header ── */
+                                    .q-header { display:flex; align-items:center; flex-wrap:wrap;
+                                                gap:10px; margin-bottom:12px; }
+                                    .q-title { font-size:1.4em; font-weight:700; margin:0; }
+                                    .q-title a { text-decoration:none; color:inherit; }
+                                    .q-title a:hover { text-decoration:underline; }
                     </style>
                     <style>
                     mjx-container, .mjx-chtml {
@@ -827,31 +888,50 @@ def get_html_article_data(item_content, item_title, headers):
 
 def generate_similar_questions(similar_questions):
     print("Generating similar questions")
-    similar_questions_html = ""
-    if similar_questions:
-        similar_questions = json.loads(similar_questions)
-        if similar_questions != []:
-            similar_questions_html += f"""<div style="background: beige;"><h5>Similar Questions</h5>"""
-            for idx, similar_question in enumerate(similar_questions, start=1):
-                similar_questions_html += f"""<div class="similar-questions-container"><div class="left"><a target="_blank" href="https://leetcode.com/problems/{similar_question['titleSlug']}">{idx}-{similar_question['title']}</a></div><div class="right"> <span>{idx}-Difficulty: {similar_question['difficulty']} <a target="_blank" href="./{similar_question['title']}.html">Local Url</a></span></div></div>"""
-            similar_questions_html += f"""</div><br>"""
-    return similar_questions_html
+    if not similar_questions:
+        return ""
+    similar_questions = json.loads(similar_questions)
+    if not similar_questions:
+        return ""
+    rows = ""
+    for idx, q in enumerate(similar_questions, start=1):
+        diff = q['difficulty']
+        diff_class = 'badge-easy' if diff == 'Easy' else ('badge-medium' if diff == 'Medium' else 'badge-hard')
+        rows += f"""<tr>
+            <td style="width:28px;color:#9ca3af;text-align:right">{idx}</td>
+            <td><a href="./{q['title']}.html">{q['title']}</a></td>
+            <td style="text-align:center"><span class="{diff_class}">{diff}</span></td>
+            <td><a target="_blank" href="https://leetcode.com/problems/{q['titleSlug']}" title="Open on LeetCode"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></td>
+        </tr>"""
+    return f"""<div class="q-section">
+        <h5>Similar Questions</h5>
+        <table class="sim-q-table">{rows}</table>
+    </div>"""
 
 
 def get_question_company_tag_stats(company_tag_stats):
     print("Getting question company tag stats")
-    company_tag_stats_html = ""
-    if company_tag_stats:
-        company_tag_stats = json.loads(company_tag_stats)
-        if company_tag_stats != {}:
-            company_tag_stats_html += f"""<div style="background: wheat;"><h5>Company Tag Stats</h5>"""
-            for key, value in company_tag_stats.items():
-                company_tag_stats_html += f"""<h6>Years: {str(int(key)-1)}-{key}</h6><div>"""
-                for company_tag_stat in value:
-                    company_tag_stats_html += f"""<td>{company_tag_stat['name']}</td>"""
-                    company_tag_stats_html += f"""<td>: {company_tag_stat['timesEncountered']} || </td>"""
-                company_tag_stats_html += "</div><br>"
-    return company_tag_stats_html
+    if not company_tag_stats:
+        return ""
+    cts = json.loads(company_tag_stats)
+    if not cts:
+        return ""
+    period_labels = {"1": "0 - 1 year", "2": "1 - 2 years", "3": "2 - 3 years"}
+    html = """<div class="q-section"><h5>Company Tag Stats</h5>"""
+    for key in sorted(cts.keys()):
+        companies = sorted(cts[key], key=lambda x: -x['timesEncountered'])
+        label = period_labels.get(key, f"{int(key)-1}-{key} years")
+        pills = "".join(
+            f"""<span class="co-pill">{c['name']}<span class="co-cnt">{c['timesEncountered']}</span></span>"""
+            for c in companies if c['timesEncountered'] > 0
+        )
+        if pills:
+            html += f"""<div class="stat-section">
+                <div class="stat-period">{label}</div><br>
+                {pills}
+            </div>"""
+    html += "</div>"
+    return html
 
 
 def get_question_data(item_content, headers):
@@ -895,24 +975,36 @@ def get_question_data(item_content, headers):
         if hints:
             hint_content = ""
             for hint in hints:
-                hint_content += f"<div> > {hint}</div>"
+                hint_content += f'<div class="hint-item">{hint}</div>'
         else:
-            hint_content = "No Hints"
-        return f""" <div class="mode">
-                    Dark mode:  <span class="change">OFF</span>
+            hint_content = '<span style="color:#9ca3af">No Hints</span>'
+        diff_class = 'badge-easy' if difficulty == 'Easy' else ('badge-medium' if difficulty == 'Medium' else 'badge-hard')
+        top_co_pills = "".join(
+            f'<span class="company-tag">{c}</span>' for c in top_companies
+        )
+        return f"""<div class="mode">Dark mode: <span class="change">OFF</span></div>
+                    <div class="q-header">
+                        <h2 class="q-title"><a target="_blank" href="{question_url}">{question_title}</a></h2>
+                        <span class="{diff_class}">{difficulty}</span>
                     </div>
-                    <h3 class="question__url"><a target="_blank" href="{question_url}">{question_title}</a></h3><p> Difficulty: {difficulty}</p>
-                    <div>{company_tag_stats}</div>
-                    <br>
-                    <div>{similar_questions}</div>
-                    <h5>Question</h5>
-                    <md-block class="question__content">{question}</md-block>
-                    <h3>Default Code</h3>
-                    <pre class="question__default_code">{default_code}</pre>
-                    <h3>Hints</h3>
-                    <md-block class="question__hints">{hint_content}</md-block>
-                    <h3>Solution</h3>
-                    <md-block class="question__solution">{solution}</md-block>
+                    {f'<div style="margin-bottom:12px">{top_co_pills}</div>' if top_co_pills else ''}
+                    {company_tag_stats}
+                    {similar_questions}
+                    <div class="">
+                        <h5>Question</h5>
+                        <md-block class="question__content">{question}</md-block>
+                    </div>
+                    <div class="">
+                        <h5>Default Code</h5>
+                        <div class=""><pre class="question__default_code">{default_code}</pre></div>
+                    </div>
+                    <div class="q-section">
+                        <h5>Hints</h5>
+                        <md-block class="question__hints">{hint_content}</md-block>
+                    </div>
+                    <div class="">
+                        <md-block class="question__solution">{solution}</md-block>
+                    </div>
                 """, question_title, {
             'title': question_title,
             'slug': question_title_slug,
@@ -950,7 +1042,7 @@ def create_card_index_html(chapters, card_slug, headers):
                 <body>
                     <div class="mode">
                     Dark mode:  <span class="change">OFF</span>
-                    </div>"
+                    </div>
                     <h1 class="card-title">{introduction['title']}</h1>
                     <p class="card-text">{introduction['introduction']}</p>
                     <br>
@@ -1086,7 +1178,7 @@ function filterCompanies() {{
                             <span style="margin-right:6px">{freq:.2f}</span>
                             <span class="freq-bar-wrap"><span class="freq-bar" style="width:{freq_pct}%"></span></span>
                         </td>
-                        <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}">&#x1F517;</a></td>
+                        <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></td>
                         </tr>'''
         with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w', encoding="utf-8") as f:
             f.write(f"""<!DOCTYPE html>
