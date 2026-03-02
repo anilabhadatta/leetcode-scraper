@@ -188,7 +188,15 @@ def scrape_question_url():
         for idx, files in enumerate(os.listdir(os.path.join(save_path, "questions")),start=1):
             if "index.html" not in files:
                 main_index_html += f"""<a href="{files}">{idx}-{files}</a><br>"""
-        main_index.write(main_index_html)
+        main_index.write(f"""<!DOCTYPE html>
+<html lang="en">
+{attach_header_in_html()}
+<body>
+<div class="mode">Dark mode: <span class="change">OFF</span></div>
+<h2>Questions Index</h2>
+{main_index_html}
+</body>
+</html>""")
     os.chdir('..')
 
 
@@ -224,8 +232,16 @@ def scrape_card_url():
             for card_url in card_urls:
                 card_url = card_url.strip()
                 card_slug = card_url.split("/")[-2]
-                main_index_html += f"""<a href={card_slug}/index.html>{card_slug}</a><br>"""        
-        main_index.write(main_index_html)
+                main_index_html += f"""<a href={card_slug}/index.html>{card_slug}</a><br>"""
+        main_index.write(f"""<!DOCTYPE html>
+<html lang="en">
+{attach_header_in_html()}
+<body>
+<div class="mode">Dark mode: <span class="change">OFF</span></div>
+<h2>Cards Index</h2>
+{main_index_html}
+</body>
+</html>""")
     # Creating HTML for each cards topics
     with open(cards_url_path, "r", encoding="utf-8") as f:
         card_urls = f.readlines()
@@ -446,6 +462,32 @@ def attach_header_in_html():
                                         });
                     </script>
                     <script>
+                    function lcGetCookie(name) {
+                        const value = '; ' + document.cookie;
+                        const parts = value.split('; ' + name + '=');
+                        if (parts.length === 2) return parts.pop().split(';').shift();
+                        return null;
+                    }
+                    function lcSetCookie(name, value, days) {
+                        const expires = new Date(Date.now() + days * 864e5).toUTCString();
+                        document.cookie = name + '=' + value + '; expires=' + expires + '; path=/';
+                    }
+                    function applyDarkMode() {
+                        $('body').addClass('dark');
+                        $('div[style*="background: wheat;"]').addClass('dark-banner');
+                        $('div[style*="background: beige;"]').addClass('dark-banner-sq');
+                        $('div[id*="v-pills-tabContent"]').addClass('tab-content dark');
+                        $('table').removeClass('table-color').addClass('table-color-dark');
+                        $('.change').text('ON');
+                    }
+                    function applyLightMode() {
+                        $('body').removeClass('dark');
+                        $('div[style*="background: wheat;"]').removeClass('dark-banner');
+                        $('div[style*="background: beige;"]').removeClass('dark-banner-sq');
+                        $('div[id*="v-pills-tabContent"]').removeClass('dark').addClass('tab-content');
+                        $('table').removeClass('table-color-dark').addClass('table-color');
+                        $('.change').text('OFF');
+                    }
                     document.addEventListener('DOMContentLoaded', function() {
                                                 const carousel = document.querySelectorAll('.carousel');
                                                 console.log(carousel)
@@ -455,25 +497,18 @@ def attach_header_in_html():
                                                 console.log(maxWidth);
                                                 for (let i = 0; i < carousel.length; i++) {
                                                     carousel[i].style.width = maxWidth + 'px';            }
-                                                
+
+                                                if (lcGetCookie('lc_dark_mode') === 'true') {
+                                                    applyDarkMode();
+                                                }
+
                                                 $( ".change" ).on("click", function() {
                                                 if( $( "body" ).hasClass( "dark" )) {
-                                                    $( "body" ).removeClass( "dark" );
-                                                    $( "div[style*='background: wheat;']" ).removeClass( "dark-banner" );
-                                                    $( "div[style*='background: beige;']" ).removeClass( "dark-banner-sq" );
-                                                    $("div[id*='v-pills-tabContent']").removeClass( "tab-content dark" );
-                                                    $("table").removeClass( "table-color-dark" );
-                                                    $("table").addClass( "table-color" );
-                                                    $("div[id*='v-pills-tabContent']").addClass( "tab-content" );
-                                                    $( ".change" ).text( "OFF" );
+                                                    applyLightMode();
+                                                    lcSetCookie('lc_dark_mode', 'false', 365);
                                                 } else {
-                                                    $( "body" ).addClass( "dark" );
-                                                    $( "div[style*='background: wheat;']" ).addClass( "dark-banner" );
-                                                    $( "div[style*='background: beige;']" ).addClass( "dark-banner-sq" );
-                                                    $("div[id*='v-pills-tabContent']").addClass( "tab-content dark" );
-                                                    $("table").removeClass( "table-color" );
-                                                    $("table").addClass( "table-color-dark" );
-                                                    $( ".change" ).text( "ON" );
+                                                    applyDarkMode();
+                                                    lcSetCookie('lc_dark_mode', 'true', 365);
                                                 }
                             });
                                     });
@@ -506,7 +541,7 @@ def attach_header_in_html():
                                         float:right;
                                     }
                                     .dark.tab-content{
-                                            background: repeating-linear-gradient(45deg, #130f0f, #3b3b3b4d 100px) !important;
+                                            background-color: #00000036 !important;
                                     }
                                     .dark-banner-sq{
                                             background-color: #3b3451b8 !important;
@@ -542,6 +577,39 @@ def attach_header_in_html():
                                         max-width: 100%;
                                         max-height: 100%;
                                     }
+                                    .dark img {
+                                        filter: invert(0.867) hue-rotate(180deg);
+                                    }
+                                    /* ── Tables ── */
+                                    .table-color { background-color: #fff; color: #222; }
+                                    .table-color-dark { background-color: #2c2c2c; color: #e6e6e6; }
+                                    .table-color td, .table-color th { border-color: #dee2e6 !important; }
+                                    .table-color-dark td, .table-color-dark th { border-color: #444 !important; color: #e6e6e6; }
+                                    /* ── Difficulty badges ── */
+                                    .badge-easy   { background-color: #00b8a3; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; }
+                                    .badge-medium { background-color: #ffc01e; color: #333; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; }
+                                    .badge-hard   { background-color: #ef4743; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; }
+                                    .dark .badge-easy   { background-color: #007d72; }
+                                    .dark .badge-medium { background-color: #b38600; color: #eee; }
+                                    .dark .badge-hard   { background-color: #b02e2c; }
+                                    /* ── Frequency bar ── */
+                                    .freq-bar-wrap { background:#ddd; border-radius:4px; width:80px; height:8px; display:inline-block; vertical-align:middle; }
+                                    .freq-bar      { background:#4e9af1; border-radius:4px; height:8px; }
+                                    .dark .freq-bar-wrap { background:#555; }
+                                    /* ── Company cards grid ── */
+                                    .company-grid { display:flex; flex-wrap:wrap; gap:8px; padding:12px 0; }
+                                    .company-card { display:inline-block; padding:6px 14px; border-radius:6px;
+                                                    background:#e8f0fe; color:#174ea6; text-decoration:none;
+                                                    font-size:0.9em; font-weight:500;
+                                                    border:1px solid #c5d3f0; transition: all .15s; }
+                                    .company-card:hover { background:#174ea6; color:#fff; text-decoration:none; }
+                                    .dark .company-card { background:#2a3a5c; color:#a8c4ff; border-color:#3a5080; }
+                                    .dark .company-card:hover { background:#3d5a8a; color:#fff; }
+                                    /* ── Search box ── */
+                                    .lc-search { margin:12px 0; padding:6px 12px; border-radius:6px;
+                                                 border:1px solid #ccc; width:100%; max-width:400px;
+                                                 font-size:1em; }
+                                    .dark .lc-search { background:#333; color:#e6e6e6; border-color:#555; }
                     </style>
                     <style>
                     mjx-container, .mjx-chtml {
@@ -628,7 +696,7 @@ def get_question_company_tag_stats(company_tag_stats):
                 company_tag_stats_html += f"""<h6>Years: {str(int(key)-1)}-{key}</h6><div>"""
                 for company_tag_stat in value:
                     company_tag_stats_html += f"""<td>{company_tag_stat['name']}</td>"""
-                    company_tag_stats_html += f"""<td>: {company_tag_stat['timesEncountered']} • </td>"""
+                    company_tag_stats_html += f"""<td>: {company_tag_stat['timesEncountered']} || </td>"""
                 company_tag_stats_html += "</div><br>"
     return company_tag_stats_html
 
@@ -781,28 +849,31 @@ def scrape_all_company_questions(choice):
 def create_all_company_index_html(company_tags, headers):
     print("Creating company index.html")
     _, _, _, save_path, _, overwrite, company_tag_save_path = load_config()
-    cols = 10
-    rows = len(company_tags)//10 + 1
-    html = ''
-    company_idx = 0
+    cards_html = ''
     with open(company_tag_save_path, 'w', encoding="utf-8") as f:
-        for _ in range(rows):
-            html += '<tr>'
-            for _ in range(cols):
-                if company_idx < len(company_tags):
-                    html += f'''<td><a href="{company_tags[company_idx]['slug']}/index.html">{company_tags[company_idx]['slug']}</a></td>'''
-                    f.write(f"https://leetcode.com/company/{company_tags[company_idx]['slug']}/\n")
-                    company_idx += 1
-            html += '</tr>'
+        for company in company_tags:
+            cards_html += f'''<a class="company-card" href="{company['slug']}/index.html">{company['slug']}</a>'''
+            f.write(f"https://leetcode.com/company/{company['slug']}/\n")
 
     with open(os.path.join(save_path, "all_company_questions", "index.html"), 'w', encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>
-                <html lang="en">
-                <head> </head>
-                <body>
-                    '<table>{html}</table>'
-                </body>
-                </html>""")
+<html lang="en">
+{attach_header_in_html()}
+<body>
+<div class="mode">Dark mode: <span class="change">OFF</span></div>
+<h2>All Company Questions</h2>
+<input class="lc-search" id="companySearch" onkeyup="filterCompanies()" placeholder="Search company..." type="text"/>
+<div class="company-grid" id="companyGrid">{cards_html}</div>
+<script>
+function filterCompanies() {{
+    var q = document.getElementById('companySearch').value.toLowerCase();
+    document.querySelectorAll('#companyGrid .company-card').forEach(function(el) {{
+        el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+    }});
+}}
+</script>
+</body>
+</html>""")
     for company in company_tags:
         slug = company['slug']
         create_folder(os.path.join(
@@ -832,21 +903,51 @@ def create_all_company_index_html(company_tags, headers):
             url=url, headers=headers, json=company_questions_data).content)['data']['favoriteQuestionList']["questions"]
         print("Sucessfully Scraped Index for ", slug)
         html = ''
+        max_freq = max((float(q['frequency']) for q in company_questions_response), default=1) or 1
         for idx, question in enumerate(company_questions_response, start=1):
             question['title'] = re.sub(r'[:?|></\\]', replace_filename, question['title'])
+            diff = question['difficulty']
+            diff_class = 'badge-easy' if diff == 'Easy' else ('badge-medium' if diff == 'Medium' else 'badge-hard')
+            freq = round(float(question['frequency']), 2)
+            freq_pct = int(float(question['frequency']) / max_freq * 100)
             html += f'''<tr>
-                        <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{idx}-{question['title']}.html</a></td>
-                        <td> Difficulty: {question['difficulty']} </td><td>Frequency: {'{:.2f}'.format(round(float(question['frequency']), 2)) }</td>
-                        <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}">Leetcode Url</a></td>
+                        <td style="width:40px;text-align:center">{idx}</td>
+                        <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{question['title']}</a></td>
+                        <td style="text-align:center"><span class="{diff_class}">{diff}</span></td>
+                        <td style="white-space:nowrap">
+                            <span style="margin-right:6px">{freq:.2f}</span>
+                            <span class="freq-bar-wrap"><span class="freq-bar" style="width:{freq_pct}%"></span></span>
+                        </td>
+                        <td><a target="_blank" href="https://leetcode.com/problems/{question['titleSlug']}">&#x1F517;</a></td>
                         </tr>'''
         with open(os.path.join(save_path, "all_company_questions", slug, "index.html"), 'w', encoding="utf-8") as f:
             f.write(f"""<!DOCTYPE html>
-                <html lang="en">
-                <head> </head>
-                <body>
-                    '<table>{html}</table>'
-                </body>
-                </html>""")
+<html lang="en">
+{attach_header_in_html()}
+<body>
+<div class="mode">Dark mode: <span class="change">OFF</span></div>
+<h2>{slug} - {len(company_questions_response)} Questions</h2>
+<input class="lc-search" id="qSearch" onkeyup="filterQ()" placeholder="Search question..." type="text"/>
+<table class="table table-bordered table-hover table-color" id="qTable" style="margin-top:10px">
+  <thead><tr>
+    <th style="width:40px">#</th>
+    <th>Title</th>
+    <th style="width:90px;text-align:center">Difficulty</th>
+    <th style="width:140px">Frequency</th>
+    <th style="width:50px">Link</th>
+  </tr></thead>
+  <tbody>{html}</tbody>
+</table>
+<script>
+function filterQ() {{
+    var q = document.getElementById('qSearch').value.toLowerCase();
+    document.querySelectorAll('#qTable tbody tr').forEach(function(row) {{
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    }});
+}}
+</script>
+</body>
+</html>""")
         os.chdir("..")
 
 
