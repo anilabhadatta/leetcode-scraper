@@ -327,20 +327,39 @@ def scrape_card_url():
         os.mkdir(os.path.join(save_path, "questions"))
     # Creating Index for Card Folder
     with open(os.path.join(save_path, "cards", "index.html"), 'w', encoding="utf-8") as main_index:
-        main_index_html = ""
+        cards_html = ""
         with open(cards_url_path, "r", encoding="utf-8") as f:
             card_urls = f.readlines()
             for card_url in card_urls:
                 card_url = card_url.strip()
-                card_slug = card_url.split("/")[-2]
-                main_index_html += f"""<a href={card_slug}/index.html>{card_slug}</a><br>"""
+                parts = card_url.rstrip("/").split("/")
+                card_slug = parts[-1]
+                category_slug = parts[-3] if len(parts) >= 3 else ""
+                label = card_slug.replace("-", " ").title()
+                category_label = category_slug.replace("-", " ").title()
+                cards_html += f'''<a class="company-card" href="{card_slug}/index.html" data-cat="{category_slug}">
+                    <span class="card-cat">{category_label}</span>{label}</a>'''
         main_index.write(f"""<!DOCTYPE html>
 <html lang="en">
 {attach_header_in_html()}
+<style>
+  .card-cat {{ display:block; font-size:0.7em; color:#6b7280; margin-bottom:2px; text-transform:uppercase; letter-spacing:.05em; }}
+  .dark .card-cat {{ color:#9ca3af; }}
+  .company-card {{ flex-direction:column; align-items:flex-start; }}
+</style>
 <body>
 <div class="mode">Dark mode: <span class="change">OFF</span></div>
 <h2>Cards Index</h2>
-{main_index_html}
+<input class="lc-search" id="cardSearch" onkeyup="filterCards()" placeholder="Search cards..." type="text"/>
+<div class="company-grid" id="cardGrid">{cards_html}</div>
+<script>
+function filterCards() {{
+    var q = document.getElementById('cardSearch').value.toLowerCase();
+    document.querySelectorAll('#cardGrid .company-card').forEach(function(el) {{
+        el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+    }});
+}}
+</script>
 </body>
 </html>""")
     # Creating HTML for each cards topics
