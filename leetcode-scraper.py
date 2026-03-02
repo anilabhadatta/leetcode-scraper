@@ -286,6 +286,7 @@ renderTable();
 </body>
 </html>""")
     os.chdir('..')
+    _ensure_base_index()
 
 
 def create_question_html(question_slug, headers):
@@ -404,6 +405,7 @@ def scrape_card_url():
                             item_content, item_title, item_id, headers)
                 os.chdir("..")
     os.chdir('..')
+    _ensure_base_index()
 
 
 def create_card_html(item_content, item_title, item_id, headers):
@@ -1104,6 +1106,7 @@ def scrape_all_company_questions(choice):
                 scrape_question_data(slug, headers, html)
             os.chdir("..")
     os.chdir('..')
+    _ensure_base_index()
 
 
 def create_all_company_index_html(company_tags, headers):
@@ -1252,6 +1255,75 @@ def replace_filename(str):
     return numDict[str.group()]
 
 
+def _ensure_base_index():
+    """Create base index.html in save_path if it doesn't already exist."""
+    _, _, _, save_path, _, _, _ = load_config()
+    if not os.path.exists(os.path.join(save_path, "index.html")):
+        create_base_index_html()
+
+
+def create_base_index_html():
+    print("Creating base index.html")
+    _, _, _, save_path, _, _, _ = load_config()
+    sections = [
+        {"title": "Questions", "href": "questions/index.html", "desc": "All scraped LeetCode questions",
+         "icon": '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>'},
+        {"title": "Cards", "href": "cards/index.html", "desc": "Explore cards and learning paths",
+         "icon": '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'},
+        {"title": "Company Questions", "href": "all_company_questions/index.html", "desc": "Questions grouped by company",
+         "icon": '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
+    ]
+    cards_html = ""
+    for s in sections:
+        cards_html += f"""<a class="idx-card" href="{s['href']}">
+            <div class="idx-icon">{s['icon']}</div>
+            <div class="idx-label">{s['title']}</div>
+            <div class="idx-desc">{s['desc']}</div>
+        </a>"""
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+{attach_header_in_html()}
+<style>
+  body {{ background: #f0f4f8 !important; }}
+  .dark body, body.dark {{ background: #181818 !important; }}
+  .idx-hero {{ text-align:center; padding: 48px 0 24px; }}
+  .idx-hero h1 {{ font-size:2em; font-weight:800; margin-bottom:6px; }}
+  .idx-hero p {{ color:#6b7280; font-size:1em; }}
+  .dark .idx-hero p {{ color:#9ca3af; }}
+  .idx-grid {{ display:flex; flex-wrap:wrap; gap:20px; justify-content:center; padding:24px 0 48px; }}
+  .idx-card {{ display:flex; flex-direction:column; align-items:center; text-align:center;
+               width:220px; padding:28px 20px 22px; border-radius:12px;
+               background:#fff; border:1px solid #e5e7eb;
+               text-decoration:none; color:inherit;
+               transition:box-shadow .2s, transform .15s; }}
+  .idx-card:hover {{ box-shadow:0 4px 24px rgba(0,0,0,0.10); transform:translateY(-3px); text-decoration:none; color:inherit; }}
+  .dark .idx-card {{ background:#1e1e1e; border-color:#333; }}
+  .dark .idx-card:hover {{ box-shadow:0 4px 24px rgba(0,0,0,0.4); }}
+  .idx-icon {{ color:#4e9af1; margin-bottom:14px; }}
+  .dark .idx-icon {{ color:#60a5fa; }}
+  .idx-label {{ font-size:1.05em; font-weight:700; margin-bottom:6px; }}
+  .idx-desc {{ font-size:0.82em; color:#6b7280; }}
+  .dark .idx-desc {{ color:#9ca3af; }}
+  .idx-footer {{ text-align:center; color:#9ca3af; font-size:0.8em; padding-bottom:32px; }}
+</style>
+<body>
+<div class="mode">Dark mode: <span class="change">OFF</span></div>
+<div class="idx-hero">
+  <h1>LeetCode Scraper</h1>
+  <p>Your local offline LeetCode archive</p>
+</div>
+<div class="idx-grid">
+  {cards_html}
+</div>
+<div class="idx-footer">Built by Anilabha Datta &mdash; <a href="https://github.com/anilabhadatta/leetcode-scraper" target="_blank">GitHub</a></div>
+</body>
+</html>"""
+    with open(os.path.join(save_path, "index.html"), 'w', encoding="utf-8") as f:
+        f.write(html)
+    print(f"Base index.html created at: {os.path.join(save_path, 'index.html')}")
+    print(f"Run: python -m http.server 8080 --directory \"{save_path}\"")
+
+
 def manual_convert_images_to_base64():
     root_dir = input("Enter path of the folder where html are located: ")
     for root, dirs, files in os.walk(root_dir):
@@ -1299,6 +1371,7 @@ if __name__ == '__main__':
                 Press 9: To scrape selected company questions indexes
                 Press 10: To scrape selected company questions
                 Press 11: To convert images to base64 using os.walk
+                Press 12: To create base index.html for http.server
                 Press any to quit
                 """)
             if previous_choice != "0":
@@ -1323,6 +1396,8 @@ if __name__ == '__main__':
                 scrape_selected_company_questions(choice)
             elif choice =="11":
                 manual_convert_images_to_base64()
+            elif choice == "12":
+                create_base_index_html()
             else:
                 break
             if previous_choice != "0":
