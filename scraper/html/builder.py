@@ -302,7 +302,7 @@ def attach_page_nav() -> str:
     """Return the top navigation bar (back button + dark mode toggle) used on every page."""
     return (
         '<div class="lc-nav">'
-        '<a class="back-btn" href="javascript:history.back()">'
+        '<a class="back-btn" href="../index.html">'
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
         '<polyline points="15 18 9 12 15 6"/></svg> Back</a>'
         '<label class="dm-switch change" title="Toggle dark mode">'
