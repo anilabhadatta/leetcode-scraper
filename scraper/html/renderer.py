@@ -159,6 +159,17 @@ def replace_iframes_with_codes(soup: BeautifulSoup, headers) -> BeautifulSoup:
         target = iframe
         if iframe.parent and iframe.parent.name == "p":
             target = iframe.parent
+
+        # Guard: the target may have been detached by a prior iteration that
+        # replaced its ancestor (e.g. two iframes inside the same <p>).
+        if target.parent is None:
+            log.warning(
+                "Skipping iframe #%d (uuid=%s) — target <%s> is no longer in the tree "
+                "(likely detached by a previous replace_with on a shared ancestor).",
+                idx, uuid, target.name
+            )
+            continue
+
         try:
             target.replace_with(BeautifulSoup(code_html, "html.parser"))
         except Exception as exc:

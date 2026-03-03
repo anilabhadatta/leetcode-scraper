@@ -78,6 +78,11 @@ def place_solution_slides(soup: BeautifulSoup, slides: list) -> BeautifulSoup:
             f'<span class="carousel-control-next-icon"></span></button>'
             f'</div>'
         )
+        if tag.parent is None:
+            log.warning(
+                "Skipping slide #%d — <p> tag is no longer in the tree.", idx
+            )
+            continue
         try:
             tag.replace_with(BeautifulSoup(html, "html.parser"))
         except Exception as exc:
