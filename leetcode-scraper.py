@@ -119,14 +119,41 @@ def create_headers(leetcode_cookie=""):
     return headers
 
 
+def lc_post(headers, json_data):
+    """Wrapper for every LeetCode GraphQL request.
+    If the headers contain a cookie, calls getUserStatus first to verify sign-in and premium state."""
+    has_cookie = bool(headers.get('cookie', '').strip())
+    if has_cookie:
+        status_data = {
+            "operationName": "getUserStatus",
+            "variables": {},
+            "query": "query getUserStatus {\n  userStatus {\n    username\n    isSignedIn\n    isPremium\n  }\n}\n"
+        }
+        status_resp = json.loads(requests.post(url=url, headers=headers, json=status_data).content)
+        user_status = status_resp['data']['userStatus']
+        is_signed_in = user_status.get('isSignedIn', False)
+        is_premium = user_status.get('isPremium', False)
+        username = user_status.get('username', 'Unknown')
+        # if not is_signed_in:
+        #     raise Exception(
+        #         f"Not signed in (username: '{username}'). "
+        #         "Please update your LEETCODE_SESSION cookie in the config (option 1)."
+        #     )
+        # if not is_premium:
+        #     raise Exception(
+        #         f"Account '{username}' does not have LeetCode Premium. "
+        #         "A Premium subscription is required to scrape this content."
+        #     )
+    return json.loads(requests.post(url=url, headers=headers, json=json_data).content)
+
+
 def get_all_cards_url():
     print("Getting all cards url")
     _, cards_url_path, _, _, _, _, _ = load_config()
     headers = create_headers()
     cards_data = {"operationName": "GetCategories", "variables": {
         "num": 1000}, "query": "query GetCategories($categorySlug: String, $num: Int) {\n  categories(slug: $categorySlug) {\n  slug\n    cards(num: $num) {\n ...CardDetailFragment\n }\n  }\n  }\n\nfragment CardDetailFragment on CardNode {\n   slug\n  categorySlug\n  }\n"}
-    cards = json.loads(requests.post(url=url, headers=headers,
-                                     json=cards_data).content)['data']['categories']
+    cards = lc_post(headers, cards_data)['data']['categories']
     with open(cards_url_path, "w", encoding="utf-8") as f:
         for category_card in cards:
             if category_card['slug'] != "featured":
@@ -142,14 +169,12 @@ def get_all_questions_url(self_function=True):
     headers = create_headers()
     question_count_data = {
         "query": "\n query getQuestionsCount {allQuestionsCount {\n    difficulty\n    count\n }} \n    "}
-    all_questions_count = json.loads(requests.post(
-        url=url, headers=headers, json=question_count_data).content)['data']['allQuestionsCount'][0]['count']
+    all_questions_count = lc_post(headers, question_count_data)['data']['allQuestionsCount'][0]['count']
     print("Total no of questions: ", all_questions_count)
 
     question_data = {"query": "\n query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {\n  problemsetQuestionList: questionList(\n    categorySlug: $categorySlug\n    limit: $limit\n    skip: $skip\n    filters: $filters\n  ) {\n  questions: data {\n title\n titleSlug\n  }\n  }\n}\n    ", "variables": {
         "categorySlug": "", "skip": 0, "limit": int(all_questions_count), "filters": {}}}
-    all_questions = json.loads(requests.post(
-        url=url, headers=headers, json=question_data).content)['data']['problemsetQuestionList']['questions']
+    all_questions = lc_post(headers, question_data)['data']['problemsetQuestionList']['questions']
     if not self_function:
         return all_questions
     write_questions_to_file(all_questions, questions_url_path)
@@ -371,8 +396,7 @@ function filterCards() {{
             card_slug = card_url.split("/")[-2]
             card_data = {"operationName": "GetChaptersWithItems", "variables": {"cardSlug": card_slug},
                         "query": "query GetChaptersWithItems($cardSlug: String!) {\n  chapters(cardSlug: $cardSlug) {\n    ...ExtendedChapterDetail\n   }\n}\n\nfragment ExtendedChapterDetail on ChapterNode {\n  id\n  title\n  slug\n description\n items {\n    id\n    title\n  }\n }\n"}
-            chapters = json.loads(requests.post(url=url, headers=headers,
-                                                json=card_data).content)['data']['chapters']
+            chapters = lc_post(headers, card_data)['data']['chapters']
             if chapters:
                 create_folder(os.path.join(save_path, "cards", card_slug))
                 create_card_index_html(chapters, card_slug, headers)
@@ -416,8 +440,7 @@ function filterCards() {{
                             continue
                         item_data = {"operationName": "GetItem", "variables": {"itemId": f"{item_id}"},
                                     "query": "query GetItem($itemId: String!) {\n  item(id: $itemId) {\n    id\n title\n  question {\n questionId\n   title\n  titleSlug\n }\n  article {\n id\n title\n }\n  htmlArticle {\n id\n  }\n  webPage {\n id\n  }\n  }\n }\n"}
-                        item_content = json.loads(requests.post(url=url, headers=headers,
-                                                                json=item_data).content)['data']['item']
+                        item_content = lc_post(headers, item_data)['data']['item']
                         if item_content == None:
                             break
                         create_card_html(
@@ -521,8 +544,7 @@ def replace_iframes_with_codes(content_soup, headers):
         if "playground" in src_url:
             playground_data = {"operationName": "allPlaygroundCodes",
                                "query": f"""query allPlaygroundCodes {{\n allPlaygroundCodes(uuid: \"{src_url.split('/')[-2]}\") {{\n    code\n    langSlug\n }}\n}}\n"""}
-            playground_content = json.loads(requests.post(
-                url=url, headers=headers, json=playground_data).content)['data']['allPlaygroundCodes']
+            playground_content = lc_post(headers, playground_data)['data']['allPlaygroundCodes']
 
             code_html = f"""<nav>
                             <div class="d-flex align-items-start">
@@ -883,8 +905,7 @@ def get_article_data(item_content, item_title, headers):
         article_id = item_content['article']['id']
         article_data = {"operationName": "GetArticle", "variables": {
             "articleId": f"{article_id}"}, "query": "query GetArticle($articleId: String!) {\n  article(id: $articleId) {\n    id\n    title\n    body\n  }\n}\n"}
-        article_content = json.loads(requests.post(
-            url=url, headers=headers, json=article_data).content)['data']['article']
+        article_content = lc_post(headers, article_data)['data']['article']
         article = article_content['body']
         return f"""<h3>{item_title}</h3>
                     <md-block class="article__content">{article}</md-block>
@@ -898,8 +919,7 @@ def get_html_article_data(item_content, item_title, headers):
         html_article_id = item_content['htmlArticle']['id']
         html_article_data = {"operationName": "GetHtmlArticle", "variables": {
             "htmlArticleId": f"{html_article_id}"}, "query": "query GetHtmlArticle($htmlArticleId: String!) {\n  htmlArticle(id: $htmlArticleId) {\n    id\n    html\n      }\n}\n"}
-        html_article_content = json.loads(requests.post(
-            url=url, headers=headers, json=html_article_data).content)['data']['htmlArticle']
+        html_article_content = lc_post(headers, html_article_data)['data']['htmlArticle']
         html_article = html_article_content['html']
         return f"""<h3>{item_title}</h3>
                     <md-block class="html_article__content">{html_article}</md-block>
@@ -961,8 +981,7 @@ def get_question_data(item_content, headers):
         question_title_slug = item_content['question']['titleSlug']
         question_data = {"operationName": "GetQuestion", "variables": {"titleSlug": question_title_slug},
                          "query": "query GetQuestion($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n title\n submitUrl\n similarQuestions\n difficulty\n  companyTagStats\n codeDefinition\n    content\n    hints\n    solution {\n      content\n   }\n   }\n }\n"}
-        question_content = json.loads(requests.post(
-            url=url, headers=headers, json=question_data).content)
+        question_content = lc_post(headers, question_data)
         try:
             question_content = question_content['data']['question']
         except:
@@ -1043,8 +1062,7 @@ def create_card_index_html(chapters, card_slug, headers):
     print("Creating index.html")
     intro_data = {"operationName": "GetExtendedCardDetail", "variables": {"cardSlug": card_slug},
                   "query": "query GetExtendedCardDetail($cardSlug: String!) {\n  card(cardSlug: $cardSlug) {\n title\n  introduction\n}\n}\n", }
-    introduction = json.loads(requests.post(url=url, headers=headers,
-                                            json=intro_data).content)['data']['card']
+    introduction = lc_post(headers, intro_data)['data']['card']
     body = ""
     for chapter in chapters:
         body += f"""
@@ -1111,8 +1129,7 @@ def scrape_all_company_questions(choice):
     print("Header generated")
     company_data = {"operationName": "questionCompanyTags", "variables": {},
                         "query": "query questionCompanyTags {\n  companyTags {\n    name\n    slug\n    questionCount\n  }\n}\n"}
-    company_tags = json.loads(requests.post(url=url, headers=headers,
-                                                json=company_data).content)['data']['companyTags']
+    company_tags = lc_post(headers, company_data)['data']['companyTags']
     if choice == "7":
         create_all_company_index_html(company_tags, headers)
     elif choice == "8":
@@ -1168,8 +1185,7 @@ function filterCompanies() {{
         print("Scrapping Index for ", slug)
         company_data = {"operationName": "favoriteDetailV2ForCompany", "variables": {"favoriteSlug": slug},
                         "query": "query favoriteDetailV2ForCompany($favoriteSlug: String!) {\n  favoriteDetailV2(favoriteSlug: $favoriteSlug) {\n    questionNumber\n    collectCount\n    generatedFavoritesInfo {\n      defaultFavoriteSlug\n      categoriesToSlugs {\n        categoryName\n        favoriteSlug\n        displayName\n      }\n    }\n  }\n}\n    "}
-        company_response = json.loads(requests.post(
-            url=url, headers=headers, json=company_data).content)['data']['favoriteDetailV2']
+        company_response = lc_post(headers, company_data)['data']['favoriteDetailV2']
         total_questions = company_response['questionNumber']
         print("Total Questions", total_questions)
         categories_to_slugs = company_response['generatedFavoritesInfo']['categoriesToSlugs']
@@ -1181,8 +1197,7 @@ function filterCompanies() {{
         print("Favorite Slug", favorite_slug)
         company_questions_data = {"operationName": "favoriteQuestionList", "variables": {"favoriteSlug": favorite_slug, "filter": {"positionRoleTagSlug": "", "skip": 0, "limit": total_questions}},
                         "query": "query favoriteQuestionList($favoriteSlug: String!, $filter: FavoriteQuestionFilterInput) {\n  favoriteQuestionList(favoriteSlug: $favoriteSlug, filter: $filter) {\n    questions {\n      difficulty\n      id\n      paidOnly\n      questionFrontendId\n      status\n      title\n      titleSlug\n      translatedTitle\n      isInMyFavorites\n      frequency\n      topicTags {\n        name\n        nameTranslated\n        slug\n      }\n    }\n    totalLength\n    hasMore\n  }\n}\n    "}
-        company_questions_response = json.loads(requests.post(
-            url=url, headers=headers, json=company_questions_data).content)['data']['favoriteQuestionList']["questions"]
+        company_questions_response = lc_post(headers, company_questions_data)['data']['favoriteQuestionList']["questions"]
         print("Sucessfully Scraped Index for ", slug)
         html = ''
         max_freq = max((float(q['frequency']) for q in company_questions_response), default=1) or 1
@@ -1343,6 +1358,40 @@ def create_base_index_html():
     print(f"Run: python -m http.server 8080 --directory \"{save_path}\"")
 
 
+def check_premium_status():
+    print("Checking LeetCode premium status...")
+    try:
+        leetcode_cookie, _, _, _, _, _, _ = load_config()
+    except Exception as e:
+        print("Could not load config:", e)
+        return
+    headers = create_headers(leetcode_cookie)
+    premium_data = {
+        "operationName": "getUserStatus",
+        "variables": {},
+        "query": "query getUserStatus {\n  userStatus {\n    username\n    isSignedIn\n    isPremium\n    activeSessionId\n  }\n}\n"
+    }
+    try:
+        response = json.loads(
+            requests.post(url=url, headers=headers, json=premium_data).content
+        )
+        user_status = response['data']['userStatus']
+        is_signed_in = user_status.get('isSignedIn', False)
+        is_premium = user_status.get('isPremium', False)
+        username = user_status.get('username', 'Unknown')
+        print(f"\n{'='*40}")
+        print(f"  Username   : {username}")
+        print(f"  Signed In  : {'Yes' if is_signed_in else 'No (cookie may be expired)'}")
+        print(f"  Premium    : {'Yes ✓' if is_premium else 'No ✗'}")
+        print(f"{'='*40}\n")
+        if not is_signed_in:
+            print("WARNING: Not signed in. Please update your LEETCODE_SESSION cookie in the config.")
+        elif not is_premium:
+            print("NOTE: Some questions and company tag stats require a LeetCode Premium subscription.")
+    except Exception as e:
+        print("Error checking premium status:", e)
+
+
 def manual_convert_images_to_base64():
     root_dir = input("Enter path of the folder where html are located: ")
     for root, dirs, files in os.walk(root_dir):
@@ -1391,6 +1440,7 @@ if __name__ == '__main__':
                 Press 10: To scrape selected company questions
                 Press 11: To convert images to base64 using os.walk
                 Press 12: To create base index.html for http.server
+                Press 13: To check LeetCode Premium status
                 Press any to quit
                 """)
             if previous_choice != "0":
@@ -1417,6 +1467,8 @@ if __name__ == '__main__':
                 manual_convert_images_to_base64()
             elif choice == "12":
                 create_base_index_html()
+            elif choice == "13":
+                check_premium_status()
             else:
                 break
             if previous_choice != "0":
