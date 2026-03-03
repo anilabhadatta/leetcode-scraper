@@ -10,7 +10,7 @@ from scraper.api import (
     fetch_question, fetch_article, fetch_html_article,
     fetch_playground_codes, fetch_card_intro,
 )
-from scraper.utils import safe_filename
+from scraper.utils import safe_filename, render_markdown_safe
 from scraper.html.builder import attach_header_in_html, attach_page_nav
 
 log = logging.getLogger(__name__)
@@ -97,8 +97,8 @@ def get_question_data(item_content: dict, headers) -> tuple:
     diff  = qc["difficulty"]
     url   = "https://leetcode.com" + qc["submitUrl"][:-7]
     code  = json.loads(qc["codeDefinition"])[0]["defaultCode"]
-    sol   = (qc["solution"] or {}).get("content") or "No Solution"
-    hints = "".join(f'<div class="hint-item">{h}</div>' for h in qc["hints"]) \
+    sol   = render_markdown_safe((qc["solution"] or {}).get("content") or "No Solution")
+    hints = "".join(f'<div class="hint-item">{render_markdown_safe(h)}</div>' for h in qc["hints"]) \
             or '<span style="color:#9ca3af">No Hints</span>'
 
     raw_cts = qc["companyTagStatsV2"]
@@ -122,7 +122,7 @@ def get_question_data(item_content: dict, headers) -> tuple:
     nav         = attach_page_nav()
     co_stats    = _render_company_stats(raw_cts)
     similar     = _render_similar_questions(qc["similarQuestions"])
-    page_html   = f'{nav}<div class="q-header"><h2 class="q-title"><a target="_blank" href="{url}">{title}</a></h2><span class="{_diff_class(diff)}">{diff}</span></div>{co_div}{co_stats}{similar}<div class=""><h5>Question</h5><md-block class="question__content">{qc["content"]}</md-block></div><div class=""><h5>Default Code</h5><div class=""><pre class="question__default_code">{_html.escape(code)}</pre></div></div><div class="q-section"><h5>Hints</h5><md-block class="question__hints">{hints}</md-block></div><div class=""><md-block class="question__solution">{sol}</md-block></div>'
+    page_html   = f'{nav}<div class="q-header"><h2 class="q-title"><a target="_blank" href="{url}">{title}</a></h2><span class="{_diff_class(diff)}">{diff}</span></div>{co_div}{co_stats}{similar}<div class=""><h5>Question</h5><div class="question__content">{qc["content"]}</div></div><div class=""><h5>Default Code</h5><div class=""><pre class="question__default_code">{_html.escape(code)}</pre></div></div><div class="q-section"><h5>Hints</h5><div class="question__hints">{hints}</div></div><div class=""><div class="question__solution">{sol}</div></div>'
     meta = dict(title=title, slug=slug, difficulty=diff, companies=top_cos, url=url, file=f"{title}.html")
     return page_html, title, meta
 
@@ -131,7 +131,7 @@ def get_article_data(item_content: dict, item_title: str, headers) -> str:
     if not item_content.get("article"):
         return ""
     art = fetch_article(headers, str(item_content["article"]["id"]))
-    return f'<h3>{item_title}</h3><md-block class="article__content">{art["body"]}</md-block>'
+    return f'<h3>{item_title}</h3><div class="article__content">{render_markdown_safe(art["body"])}</div>'
 
 
 def get_html_article_data(item_content: dict, item_title: str, headers) -> str:

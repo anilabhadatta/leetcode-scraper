@@ -333,7 +333,6 @@ def create_question_html(question_slug, headers):
     content += question_content
     content += """</body>"""
     slides_json = find_slides_json(content)
-    content = markdown2.markdown(content)
     content = attach_header_in_html() + content
     content_soup = BeautifulSoup(content, 'html.parser')
     content_soup = replace_iframes_with_codes(content_soup, headers)
@@ -470,7 +469,6 @@ def create_card_html(item_content, item_title, item_id, headers):
     content += get_html_article_data(item_content, item_title, headers)
     content += """</body>"""
     slides_json = find_slides_json(content)
-    content = markdown2.markdown(content)
     content = attach_header_in_html() + content
     content_soup = BeautifulSoup(content, 'html.parser')
     content_soup = replace_iframes_with_codes(content_soup, headers)

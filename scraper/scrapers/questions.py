@@ -2,7 +2,6 @@ import json
 import logging
 import os
 
-import markdown2
 from bs4 import BeautifulSoup
 
 from scraper.api import create_headers, fetch_questions_count, fetch_all_questions
@@ -59,7 +58,6 @@ def create_question_html(question_slug: str, headers, save_path: str, save_image
     question_content, question_title, meta = get_question_data(item_content, headers)
     content += question_content + "</body>"
     slides_json = find_slides_json(content)
-    content = markdown2.markdown(content)
     content = attach_header_in_html() + content
     soup = BeautifulSoup(content, "html.parser")
     soup = replace_iframes_with_codes(soup, headers)

@@ -1,7 +1,6 @@
 import logging
 import os
 
-import markdown2
 from bs4 import BeautifulSoup
 
 from scraper.api import create_headers, fetch_all_categories, fetch_card_chapters, fetch_card_item
@@ -66,7 +65,6 @@ def create_card_html(
     content += get_html_article_data(item_content, item_title, headers)
     content += "</body>"
     slides_json = find_slides_json(content)
-    content = markdown2.markdown(content)
     content = attach_header_in_html() + content
     soup = BeautifulSoup(content, "html.parser")
     soup = replace_iframes_with_codes(soup, headers)
