@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 from scraper.api import create_headers, fetch_company_tags, fetch_company_favorite_meta, fetch_company_questions
 from scraper.config import load_config
-from scraper.utils import create_folder, safe_filename, copy_html
+from scraper.utils import create_folder, safe_filename
 from scraper.html.builder import attach_header_in_html, attach_page_nav
 from scraper.html.indexes import _ensure_base_index
 from scraper.scrapers.questions import create_question_html
@@ -87,7 +87,7 @@ function filterCompanies() {{
                     f'<tr>'
                     f'<td style="width:40px;text-align:center">{idx}</td>'
                     f'<td><a slug="{question["titleSlug"]}" title="{question["title"]}.html" '
-                    f'href="{question["title"]}.html">{question["title"]}</a></td>'
+                    f'href="../../questions/{question["title"]}.html">{question["title"]}</a></td>'
                     f'<td style="text-align:center"><span class="{diff_class}">{diff}</span></td>'
                     f'<td style="white-space:nowrap">'
                     f'<span style="margin-right:6px">{freq:.2f}</span>'
@@ -150,33 +150,23 @@ def scrape_question_data(slug: str, headers, html: str) -> None:
     save_images_locally = config["save_images_locally"]
 
     question_titles = BeautifulSoup(html, "html.parser").find_all("a", title=True)
-    os.makedirs(os.path.join(save_path, "questions"), exist_ok=True)
+    questions_dir = os.path.join(save_path, "questions")
+    os.makedirs(questions_dir, exist_ok=True)
 
+    prev_dir = os.getcwd()
     for qtag in question_titles:
         qtag["title"] = safe_filename(qtag["title"])
-        company_file = os.path.join(save_path, "all_company_questions", slug, qtag["title"])
-        questions_file = os.path.join(save_path, "questions", qtag["title"])
+        questions_file = os.path.join(questions_dir, qtag["title"])
 
-        if qtag["title"] in os.listdir(os.path.join(save_path, "all_company_questions", slug)) and not overwrite:
-            log.info("Already scraped company question %s / %s", qtag["title"], slug)
-            if qtag["title"] in os.listdir(os.path.join(save_path, "questions")):
-                if os.path.getsize(questions_file) > os.path.getsize(company_file):
-                    copy_html(questions_file, os.path.join(save_path, "all_company_questions", slug))
-                else:
-                    copy_html(company_file, os.path.join(save_path, "questions"))
-            continue
-
-        if qtag["title"] in os.listdir(os.path.join(save_path, "questions")) and not overwrite:
-            log.info("Copying from questions folder: %s", qtag["title"])
-            copy_html(questions_file, os.path.join(save_path, "all_company_questions", slug))
+        if os.path.isfile(questions_file) and not overwrite:
+            log.info("Already in questions/: %s", qtag["title"])
             continue
 
         log.info("Scraping: %s", qtag["title"])
+        os.chdir(questions_dir)
         create_question_html(qtag["slug"], headers, save_path, save_images_locally)
-        dst = os.path.join(save_path, "questions")
-        src = os.path.join(save_path, "all_company_questions", slug, qtag["title"])
-        if os.path.exists(src):
-            copy_html(src, dst)
+
+    os.chdir(prev_dir)
 
 
 # ---------------------------------------------------------------------------

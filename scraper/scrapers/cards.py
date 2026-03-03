@@ -7,7 +7,7 @@ from scraper.api import create_headers, fetch_all_categories, fetch_card_chapter
 from scraper.config import load_config
 
 log = logging.getLogger(__name__)
-from scraper.utils import create_folder, safe_filename, copy_html
+from scraper.utils import create_folder, safe_filename
 from scraper.html.builder import attach_header_in_html, attach_page_nav
 from scraper.html.assets import fix_image_urls
 from scraper.html.slides import find_slides_json, place_solution_slides
@@ -57,7 +57,16 @@ def create_card_html(
     item_id: str,
     headers,
     save_images_locally: bool,
-) -> None:
+    save_path: str,
+) -> tuple[str, bool]:
+    """Render and write a card item HTML file.
+
+    If the item contains a question it is saved to questions/{title}.html so it
+    lives alongside all other question pages.  Pure article items are saved to
+    the current directory (the card folder) as {id}-{title}.html.
+
+    Returns (filename, in_questions) so callers can build an index manifest.
+    """
     content = "<body>"
     question_content, _, _ = get_question_data(item_content, headers)
     content += question_content
@@ -70,8 +79,20 @@ def create_card_html(
     soup = replace_iframes_with_codes(soup, headers)
     soup = place_solution_slides(soup, slides_json)
     soup = fix_image_urls(soup, save_images_locally)
-    with open(f"{item_id}-{item_title}.html", "w", encoding="utf-8") as f:
+
+    has_question = bool(item_content.get("question"))
+    if has_question:
+        questions_dir = os.path.join(save_path, "questions")
+        os.makedirs(questions_dir, exist_ok=True)
+        filename = f"{item_title}.html"
+        dest = os.path.join(questions_dir, filename)
+    else:
+        filename = f"{item_id}-{item_title}.html"
+        dest = filename  # current dir (card folder)
+
+    with open(dest, "w", encoding="utf-8") as f:
         f.write(soup.prettify())
+    return filename, has_question
 
 
 # ---------------------------------------------------------------------------
@@ -143,7 +164,9 @@ function filterCards() {{
                 continue
 
             create_folder(os.path.join(save_path, "cards", card_slug))
-            create_card_index_html(chapters, card_slug, headers)
+
+            # manifest: item_id -> (filename, in_questions)
+            manifest: dict[str, tuple[str, bool]] = {}
 
             for subcategory in chapters:
                 log.info("Scraping subcategory: %s", subcategory["title"])
@@ -152,32 +175,26 @@ function filterCards() {{
                     item_id = item["id"]
                     item_title = safe_filename(item["title"])
 
-                    if (
-                        f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug))
-                        and not overwrite
-                    ):
-                        log.info("Already scraped %s-%s.html", item_id, item_title)
-                        continue
+                    # Check if already saved to questions/ (question-backed item)
+                    q_file = os.path.join(save_path, "questions", f"{item_title}.html")
+                    card_file = os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html")
 
-                    if f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and not overwrite:
-                        log.info("Copying from questions folder: %s", item_title)
-                        copy_html(
-                            os.path.join(save_path, "questions", f"{item_title}.html"),
-                            os.path.join(save_path, "cards", card_slug),
-                        )
-                        try:
-                            os.rename(
-                                os.path.join(save_path, "cards", card_slug, f"{item_title}.html"),
-                                os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html"),
-                            )
-                        except Exception:
-                            pass
+                    if os.path.isfile(q_file) and not overwrite:
+                        log.info("Already in questions/: %s", item_title)
+                        manifest[item_id] = (f"{item_title}.html", True)
+                        continue
+                    if os.path.isfile(card_file) and not overwrite:
+                        log.info("Already scraped %s-%s.html", item_id, item_title)
+                        manifest[item_id] = (f"{item_id}-{item_title}.html", False)
                         continue
 
                     item_content = fetch_card_item(headers, str(item_id))
                     if item_content is None:
                         break
-                    create_card_html(item_content, item_title, item_id, headers, save_images_locally)
+                    fname, in_q = create_card_html(item_content, item_title, item_id, headers, save_images_locally, save_path)
+                    manifest[item_id] = (fname, in_q)
+
+            create_card_index_html(chapters, card_slug, headers, manifest)
             os.chdir("..")
     except KeyboardInterrupt:
         log.warning("Interrupted — building index with cards scraped so far.")
@@ -221,19 +238,29 @@ def scrape_single_card(url_or_slug: str) -> None:
         os.chdir("..")
         return
 
-    create_card_index_html(chapters, slug, headers)
+    manifest: dict[str, tuple[str, bool]] = {}
     for chapter in chapters:
         for item in chapter["items"]:
             item_id = item["id"]
             item_title = safe_filename(item["title"])
-            if f"{item_id}-{item_title}.html" in os.listdir() and not overwrite:
+            q_file = os.path.join(save_path, "questions", f"{item_title}.html")
+            card_file = os.path.join(save_path, "cards", slug, f"{item_id}-{item_title}.html")
+            if os.path.isfile(q_file) and not overwrite:
+                log.info("Already in questions/: %s", item_title)
+                manifest[item_id] = (f"{item_title}.html", True)
+                continue
+            if os.path.isfile(card_file) and not overwrite:
                 log.info("Already scraped %s-%s.html", item_id, item_title)
+                manifest[item_id] = (f"{item_id}-{item_title}.html", False)
                 continue
             item_content = fetch_card_item(headers, str(item_id))
             if item_content is None:
                 continue
-            create_card_html(item_content, item_title, item_id, headers, save_images_locally)
-            log.info("  Done → %s-%s.html", item_id, item_title)
+            fname, in_q = create_card_html(item_content, item_title, item_id, headers, save_images_locally, save_path)
+            manifest[item_id] = (fname, in_q)
+            log.info("  Done → %s (in_questions=%s)", fname, in_q)
+
+    create_card_index_html(chapters, slug, headers, manifest)
     os.chdir("..")
     log.info("Card '%s' done.", slug)
     _ensure_base_index()

@@ -197,14 +197,26 @@ def replace_iframes_with_codes(soup: BeautifulSoup, headers) -> BeautifulSoup:
     return soup
 
 
-def create_card_index_html(chapters: list, card_slug: str, headers) -> None:
+def create_card_index_html(chapters: list, card_slug: str, headers, manifest: dict | None = None) -> None:
+    """Build index.html for a card.
+
+    manifest: optional dict of {item_id: (filename, in_questions)} produced during
+    scraping.  When in_questions is True the href points to ../../questions/<file>;
+    otherwise it points to the local <file> inside the card folder.
+    If manifest is None the old {id}-{title}.html fallback is used.
+    """
     intro = fetch_card_intro(headers, card_slug)
     body_parts: list[str] = []
     for ch in chapters:
         body_parts.append(f'<br><h3>{ch["title"]}</h3>{ch["description"]}<br>')
         for it in ch["items"]:
             name = safe_filename(it["title"])
-            body_parts.append(f'<a href="{it["id"]}-{name}.html">{it["id"]}-{name}</a><br>')
+            if manifest and it["id"] in manifest:
+                fname, in_q = manifest[it["id"]]
+                href = f"../../questions/{fname}" if in_q else fname
+            else:
+                href = f'{it["id"]}-{name}.html'
+            body_parts.append(f'<a href="{href}">{name}</a><br>')
     body = "".join(body_parts)
     html = (
         "<!DOCTYPE html>\n<html lang=\"en\">\n"

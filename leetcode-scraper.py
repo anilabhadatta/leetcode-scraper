@@ -419,35 +419,8 @@ function filterCards() {{
 
                         if f"{item_id}-{item_title}.html" in os.listdir(os.path.join(save_path, "cards", card_slug)) and overwrite == False:
                             print(f"Already scraped {item_id}-{item_title}.html")
-                            if f"{item_title}.html" in os.path.join(save_path, "questions"):
-                                if os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) > os.path.getsize(os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
-                                    copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
-                                    save_path, "cards", card_slug))
-                                    try:
-                                        os.remove(os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                                    except:
-                                        pass
-                                    os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                                elif os.path.getsize(os.path.join(save_path, "questions", f"{item_title}.html")) < os.path.getsize(os.path.join(
-                                    save_path, "cards", card_slug, f"{item_id}-{item_title}.html")):
-                                    copy_html(os.path.join(save_path, "cards", card_slug, f"{item_id}-{item_title}.html"), os.path.join(save_path, "questions"))
-                                    try:
-                                        os.remove(os.path.join(save_path, "questions", f"{item_title}.html"))
-                                    except:
-                                        pass
-                                    os.rename(os.path.join(save_path, "questions", f"{item_id}-{item_title}.html"), os.path.join(
-                                save_path, "questions", f"{item_title}.html"))
                             continue
-                        if f"{item_title}.html" in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
-                            print("Copying from questions folder", item_title)
-                            copy_html(os.path.join(save_path, "questions", f"{item_title}.html"), os.path.join(
-                                save_path, "cards", card_slug))
-                            os.rename(os.path.join(save_path, "cards", card_slug, f"{item_title}.html"), os.path.join(
-                                save_path, "cards", card_slug, f"{item_id}-{item_title}.html"))
-                            continue
+
                         item_data = {"operationName": "GetItem", "variables": {"itemId": f"{item_id}"},
                                     "query": "query GetItem($itemId: String!) {\n  item(id: $itemId) {\n    id\n title\n  question {\n questionId\n   title\n  titleSlug\n }\n  article {\n id\n title\n }\n  htmlArticle {\n id\n  }\n  webPage {\n id\n  }\n  }\n }\n"}
                         item_content = lc_post(headers, item_data)['data']['item']
@@ -1231,7 +1204,7 @@ function filterCompanies() {{
             freq_pct = int(float(question['frequency']) / max_freq * 100)
             html += f'''<tr>
                         <td style="width:40px;text-align:center">{idx}</td>
-                        <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="{question['title']}.html">{question['title']}</a></td>
+                        <td><a slug="{question['titleSlug']}" title="{question['title']}.html" href="../../questions/{question['title']}.html">{question['title']}</a></td>
                         <td style="text-align:center"><span class="{diff_class}">{diff}</span></td>
                         <td style="white-space:nowrap">
                             <span style="margin-right:6px">{freq:.2f}</span>
@@ -1273,33 +1246,20 @@ function filterQ() {{
 def scrape_question_data(slug, headers, html):
     print("Scraping question data")
     _, _, _, save_path, _, overwrite, _ = load_config()
-    question_titles = BeautifulSoup(
-        html, 'html.parser').find_all('a', title=True)
-    if "questions" not in os.listdir(save_path):
-        os.mkdir(os.path.join(save_path, "questions"))
+    question_titles = BeautifulSoup(html, 'html.parser').find_all('a', title=True)
+    questions_dir = os.path.join(save_path, "questions")
+    os.makedirs(questions_dir, exist_ok=True)
+    prev_dir = os.getcwd()
     for question_title in question_titles:
         question_title['title'] = re.sub(r'[:?|></\\]', replace_filename, question_title['title'])
-        if question_title['title'] in os.listdir(os.path.join(save_path, "all_company_questions", slug)) and overwrite == False:
-            print("Already Scraped Company", question_title['title'], slug)
-            if question_title['title'] in os.listdir(os.path.join(save_path, "questions")) and os.path.getsize(os.path.join(save_path, "questions", question_title['title'])) > os.path.getsize(os.path.join(save_path, "all_company_questions",
-                                   slug, question_title['title'])):
-                copy_html(os.path.join(save_path, "questions", question_title['title']), os.path.join(
-                save_path, "all_company_questions", slug))
-            else:
-                copy_html(os.path.join(save_path, "all_company_questions",
-                                    slug, question_title['title']), os.path.join(
-                    save_path, "questions"))
-            continue
-        if question_title['title'] in os.listdir(os.path.join(save_path, "questions")) and overwrite == False:
-            print("Copying from questions folder", question_title['title'])
-            copy_html(os.path.join(save_path, "questions", question_title['title']), os.path.join(
-                save_path, "all_company_questions", slug))
+        questions_file = os.path.join(questions_dir, question_title['title'])
+        if os.path.isfile(questions_file) and not overwrite:
+            print("Already in questions/:", question_title['title'])
             continue
         print("Scraping ", question_title['title'])
+        os.chdir(questions_dir)
         create_question_html(question_title['slug'], headers)
-        copy_html(os.path.join(save_path, "all_company_questions",
-                  slug, question_title['title']), os.path.join(
-            save_path, "questions"))
+    os.chdir(prev_dir)
 
 
 def copy_html(src, dst):
