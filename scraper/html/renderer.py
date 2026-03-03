@@ -106,8 +106,13 @@ def get_question_data(item_content: dict, headers) -> tuple:
     if raw_cts:
         try:
             cts = json.loads(raw_cts)
-            recent = cts.get("three_months") or cts.get("six_months") or cts.get("more_than_six_months") or []
-            top_cos = [c["name"] for c in sorted(recent, key=lambda x: -x["timesEncountered"])[:8]]
+            totals: dict[str, int] = {}
+            for key in ("three_months", "six_months", "more_than_six_months"):
+                for entry in cts.get(key) or []:
+                    name = entry.get("name", "")
+                    if name:
+                        totals[name] = totals.get(name, 0) + entry.get("timesEncountered", 0)
+            top_cos = [name for name, _ in sorted(totals.items(), key=lambda x: -x[1])[:8]]
         except Exception:
             pass
 
