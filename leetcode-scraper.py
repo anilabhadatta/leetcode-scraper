@@ -134,16 +134,16 @@ def lc_post(headers, json_data):
         is_signed_in = user_status.get('isSignedIn', False)
         is_premium = user_status.get('isPremium', False)
         username = user_status.get('username', 'Unknown')
-        # if not is_signed_in:
-        #     raise Exception(
-        #         f"Not signed in (username: '{username}'). "
-        #         "Please update your LEETCODE_SESSION cookie in the config (option 1)."
-        #     )
-        # if not is_premium:
-        #     raise Exception(
-        #         f"Account '{username}' does not have LeetCode Premium. "
-        #         "A Premium subscription is required to scrape this content."
-        #     )
+        if not is_signed_in:
+            raise Exception(
+                f"Not signed in (username: '{username}'). "
+                "Please update your LEETCODE_SESSION cookie in the config (option 1)."
+            )
+        if not is_premium:
+            raise Exception(
+                f"Account '{username}' does not have LeetCode Premium. "
+                "A Premium subscription is required to scrape this content."
+            )
     return json.loads(requests.post(url=url, headers=headers, json=json_data).content)
 
 
