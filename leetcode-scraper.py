@@ -172,9 +172,20 @@ def get_all_questions_url(self_function=True):
     all_questions_count = lc_post(headers, question_count_data)['data']['allQuestionsCount'][0]['count']
     print("Total no of questions: ", all_questions_count)
 
-    question_data = {"query": "\n query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {\n  problemsetQuestionList: questionList(\n    categorySlug: $categorySlug\n    limit: $limit\n    skip: $skip\n    filters: $filters\n  ) {\n  questions: data {\n title\n titleSlug\n  }\n  }\n}\n    ", "variables": {
-        "categorySlug": "", "skip": 0, "limit": int(all_questions_count), "filters": {}}}
-    all_questions = lc_post(headers, question_data)['data']['problemsetQuestionList']['questions']
+    PAGE_SIZE = 100
+    all_questions = []
+    skip = 0
+    while skip < all_questions_count:
+        print(f"Fetching questions {skip + 1} - {min(skip + PAGE_SIZE, all_questions_count)} / {all_questions_count}")
+        question_data = {"query": "\n query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {\n  problemsetQuestionList: questionList(\n    categorySlug: $categorySlug\n    limit: $limit\n    skip: $skip\n    filters: $filters\n  ) {\n  questions: data {\n title\n titleSlug\n  }\n  }\n}\n    ", "variables": {
+            "categorySlug": "", "skip": skip, "limit": PAGE_SIZE, "filters": {}}}
+        page = lc_post(headers, question_data)['data']['problemsetQuestionList']['questions']
+        if not page:
+            break
+        all_questions.extend(page)
+        skip += PAGE_SIZE
+
+    print(f"Total questions fetched: {len(all_questions)}")
     if not self_function:
         return all_questions
     write_questions_to_file(all_questions, questions_url_path)

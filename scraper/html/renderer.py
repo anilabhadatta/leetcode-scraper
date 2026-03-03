@@ -159,7 +159,18 @@ def replace_iframes_with_codes(soup: BeautifulSoup, headers) -> BeautifulSoup:
         target = iframe
         if iframe.parent and iframe.parent.name == "p":
             target = iframe.parent
-        target.replace_with(BeautifulSoup(code_html, "html.parser"))
+        try:
+            target.replace_with(BeautifulSoup(code_html, "html.parser"))
+        except Exception as exc:
+            log.error(
+                "replace_with failed in replace_iframes_with_codes [iframe #%d, uuid=%s]: %s",
+                idx, uuid, exc
+            )
+            log.error("  target tag : %s", target.name)
+            log.error("  target parent: %s", getattr(target.parent, 'name', None))
+            log.error("  target in tree: %s", target.parent is not None)
+            log.error("  iframe src : %s", iframe.get('src', ''))
+            raise
     return soup
 
 

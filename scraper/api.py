@@ -141,18 +141,29 @@ def fetch_questions_count(headers: CaseInsensitiveDict) -> int:
     return next(c["count"] for c in counts if c["difficulty"] == "All")
 
 
-def fetch_all_questions(headers: CaseInsensitiveDict, limit: int) -> list[dict]:
-    """Return [{title, titleSlug}] for every question."""
-    payload = {
-        "operationName": "problemsetQuestionList",
-        "variables": {"categorySlug": "", "skip": 0, "limit": limit, "filters": {}},
-        "query": (
-            "query problemsetQuestionList($categorySlug:String,$limit:Int,$skip:Int,$filters:QuestionListFilterInput){"
-            "problemsetQuestionList:questionList(categorySlug:$categorySlug limit:$limit skip:$skip filters:$filters){"
-            "questions:data{title titleSlug}}}"
-        ),
-    }
-    return lc_post(headers, payload)["data"]["problemsetQuestionList"]["questions"]
+def fetch_all_questions(headers: CaseInsensitiveDict, total: int) -> list[dict]:
+    """Return [{title, titleSlug}] for every question, paginating 100 at a time."""
+    PAGE_SIZE = 100
+    all_questions: list[dict] = []
+    skip = 0
+    while skip < total:
+        log.info("Fetching questions %d - %d / %d", skip + 1, min(skip + PAGE_SIZE, total), total)
+        payload = {
+            "operationName": "problemsetQuestionList",
+            "variables": {"categorySlug": "", "skip": skip, "limit": PAGE_SIZE, "filters": {}},
+            "query": (
+                "query problemsetQuestionList($categorySlug:String,$limit:Int,$skip:Int,$filters:QuestionListFilterInput){"
+                "problemsetQuestionList:questionList(categorySlug:$categorySlug limit:$limit skip:$skip filters:$filters){"
+                "questions:data{title titleSlug}}}"
+            ),
+        }
+        page = lc_post(headers, payload)["data"]["problemsetQuestionList"]["questions"]
+        if not page:
+            break
+        all_questions.extend(page)
+        skip += PAGE_SIZE
+    log.info("Total questions fetched: %d", len(all_questions))
+    return all_questions
 
 
 def fetch_question(headers: CaseInsensitiveDict, slug: str) -> dict:

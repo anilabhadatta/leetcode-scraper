@@ -78,6 +78,16 @@ def place_solution_slides(soup: BeautifulSoup, slides: list) -> BeautifulSoup:
             f'<span class="carousel-control-next-icon"></span></button>'
             f'</div>'
         )
-        tag.replace_with(BeautifulSoup(html, "html.parser"))
+        try:
+            tag.replace_with(BeautifulSoup(html, "html.parser"))
+        except Exception as exc:
+            log.error(
+                "replace_with failed in place_solution_slides [slide #%d]: %s",
+                idx, exc
+            )
+            log.error("  tag text    : %.120s", tag.get_text())
+            log.error("  tag parent  : %s", getattr(tag.parent, 'name', None))
+            log.error("  tag in tree : %s", tag.parent is not None)
+            raise
     return soup
 
