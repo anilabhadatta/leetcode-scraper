@@ -175,7 +175,7 @@ def fetch_question(headers: CaseInsensitiveDict, slug: str) -> dict:
             "query GetQuestion($titleSlug:String!){"
             "question(titleSlug:$titleSlug){"
             "title submitUrl similarQuestions difficulty "
-            "companyTagStats codeDefinition content hints "
+            "companyTagStatsV2 codeDefinition content hints "
             "solution{content}}}"
         ),
     }

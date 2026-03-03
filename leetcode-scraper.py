@@ -992,7 +992,7 @@ def get_question_data(item_content, headers):
     if item_content['question']:
         question_title_slug = item_content['question']['titleSlug']
         question_data = {"operationName": "GetQuestion", "variables": {"titleSlug": question_title_slug},
-                         "query": "query GetQuestion($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n title\n submitUrl\n similarQuestions\n difficulty\n  companyTagStats\n codeDefinition\n    content\n    hints\n    solution {\n      content\n   }\n   }\n }\n"}
+                         "query": "query GetQuestion($titleSlug: String!) {\n  question(titleSlug: $titleSlug) {\n title\n submitUrl\n similarQuestions\n difficulty\n  companyTagStatsV2\n codeDefinition\n    content\n    hints\n    solution {\n      content\n   }\n   }\n }\n"}
         question_content = lc_post(headers, question_data)
         try:
             question_content = question_content['data']['question']
@@ -1001,7 +1001,7 @@ def get_question_data(item_content, headers):
         question_title = re.sub(r'[:?|></\\]', replace_filename, question_content['title'])
         question = question_content['content']
         difficulty = question_content['difficulty']
-        raw_cts = question_content['companyTagStats']
+        raw_cts = question_content['companyTagStatsV2']
         top_companies = []
         if raw_cts:
             try:

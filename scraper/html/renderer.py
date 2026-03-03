@@ -94,7 +94,7 @@ def get_question_data(item_content: dict, headers) -> tuple:
     hints = "".join(f'<div class="hint-item">{h}</div>' for h in qc["hints"]) \
             or '<span style="color:#9ca3af">No Hints</span>'
 
-    raw_cts = qc["companyTagStats"]
+    raw_cts = qc["companyTagStatsV2"]
     top_cos = []
     if raw_cts:
         try:
