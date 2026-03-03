@@ -1,6 +1,7 @@
 """HTML rendering helpers - business logic for question/article/card HTML."""
 from __future__ import annotations
 
+import html as _html
 import json
 import logging
 from bs4 import BeautifulSoup
@@ -106,22 +107,12 @@ def get_question_data(item_content: dict, headers) -> tuple:
     co_pills = "".join(f'<span class="company-tag">{c}</span>' for c in top_cos)
     co_div = f'<div style="margin-bottom:12px">{co_pills}</div>' if co_pills else ""
 
-    html = "\n".join([
-        attach_page_nav(),
-        f'<div class="q-header">',
-        f'  <h2 class="q-title"><a target="_blank" href="{url}">{title}</a></h2>',
-        f'  <span class="{_diff_class(diff)}">{diff}</span>',
-        f'</div>',
-        co_div,
-        _render_company_stats(raw_cts),
-        _render_similar_questions(qc["similarQuestions"]),
-        f'<div class="">\n  <h5>Question</h5>\n  <md-block class="question__content">{qc["content"]}</md-block>\n</div>',
-        f'<div class="">\n  <h5>Default Code</h5>\n  <div class=""><pre class="question__default_code">{code}</pre></div>\n</div>',
-        f'<div class="q-section">\n  <h5>Hints</h5>\n  <md-block class="question__hints">{hints}</md-block>\n</div>',
-        f'<div class="">\n  <md-block class="question__solution">{sol}</md-block>\n</div>',
-    ])
+    nav         = attach_page_nav()
+    co_stats    = _render_company_stats(raw_cts)
+    similar     = _render_similar_questions(qc["similarQuestions"])
+    page_html   = f'{nav}<div class="q-header"><h2 class="q-title"><a target="_blank" href="{url}">{title}</a></h2><span class="{_diff_class(diff)}">{diff}</span></div>{co_div}{co_stats}{similar}<div class=""><h5>Question</h5><md-block class="question__content">{qc["content"]}</md-block></div><div class=""><h5>Default Code</h5><div class=""><pre class="question__default_code">{_html.escape(code)}</pre></div></div><div class="q-section"><h5>Hints</h5><md-block class="question__hints">{hints}</md-block></div><div class=""><md-block class="question__solution">{sol}</md-block></div>'
     meta = dict(title=title, slug=slug, difficulty=diff, companies=top_cos, url=url, file=f"{title}.html")
-    return html, title, meta
+    return page_html, title, meta
 
 
 def get_article_data(item_content: dict, item_title: str, headers) -> str:
@@ -155,15 +146,20 @@ def replace_iframes_with_codes(soup: BeautifulSoup, headers) -> BeautifulSoup:
             )
             panes_list.append(
                 f'<div class="tab-pane fade {show_active}" id="vp-{idx}{i}">'
-                f'<code><pre>{c["code"]}</pre></code></div>'
+                f'<pre>{_html.escape(c["code"])}</pre></div>'
             )
         tabs = "".join(tabs_list)
         panes = "".join(panes_list)
-        html = (
+        code_html = (
             f'<nav><div class="nav nav-tabs">{tabs}</div></nav>'
-            f'<div class="tab-content">{panes}</div>'
+            f'<div class="tab-content" id="v-pills-tabContent">{panes}</div>'
         )
-        iframe.replace_with(BeautifulSoup(html, "html.parser"))
+        # markdown2 wraps iframes in <p>; inserting block divs inside <p> causes
+        # the parser to eject tab-panes outside tab-content. Replace <p> if needed.
+        target = iframe
+        if iframe.parent and iframe.parent.name == "p":
+            target = iframe.parent
+        target.replace_with(BeautifulSoup(code_html, "html.parser"))
     return soup
 
 

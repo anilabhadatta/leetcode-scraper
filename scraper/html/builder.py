@@ -53,7 +53,6 @@ def attach_header_in_html() -> str:
                         $('div[style*="background: beige;"]').addClass('dark-banner-sq');
                         $('div[id*="v-pills-tabContent"]').addClass('tab-content dark');
                         $('table').removeClass('table-color').addClass('table-color-dark');
-                        $('.dm-label').text('ON');
                     }
                     function applyLightMode() {
                         $('body').removeClass('dark');
@@ -61,7 +60,6 @@ def attach_header_in_html() -> str:
                         $('div[style*="background: beige;"]').removeClass('dark-banner-sq');
                         $('div[id*="v-pills-tabContent"]').removeClass('dark').addClass('tab-content');
                         $('table').removeClass('table-color-dark').addClass('table-color');
-                        $('.dm-label').text('OFF');
                     }
                     document.addEventListener('DOMContentLoaded', function() {
                                                 const carousel = document.querySelectorAll('.carousel');
@@ -119,9 +117,6 @@ def attach_header_in_html() -> str:
                                     }
                                     .change {
                                         cursor: pointer;
-                                        border: 1px solid #555;
-                                        border-radius: 40%;
-                                        width: 20px;
                                         text-align: center;
                                         padding: 5px;
                                         margin-left: 8px;
@@ -223,7 +218,8 @@ def attach_header_in_html() -> str:
                                     .sim-q-table tr:hover td { background:rgba(0,0,0,0.03); }
                                     .dark .sim-q-table tr:hover td { background:rgba(255,255,255,0.04); }
                                     /* ── Question sections ── */
-                                    .q-section { margin:18px 0; padding:14px 18px;
+                                    .q-section { font-size: 1rem !important; 
+                                                 margin:18px 0; padding:14px 18px;
                                                  border-radius:8px; background:#fff;
                                                  border:1px solid #e5e7eb;
                                                  overflow:hidden; box-sizing:border-box; }
@@ -276,15 +272,23 @@ def attach_header_in_html() -> str:
                                     .back-btn:hover { background:#e5e7eb; color:#111; text-decoration:none; }
                                     .dark .back-btn { background:#2d2d2d; color:#d1d5db; border-color:#444; }
                                     .dark .back-btn:hover { background:#3a3a3a; color:#fff; }
-                                    .mode-toggle { display:inline-flex; align-items:center; gap:7px;
-                                                   padding:5px 12px; border-radius:6px; font-size:0.88em;
-                                                   background:#f3f4f6; color:#374151;
-                                                   border:1px solid #d1d5db; cursor:pointer;
-                                                   transition:all .15s; user-select:none; }
-                                    .mode-toggle:hover { background:#e5e7eb; }
-                                    .dark .mode-toggle { background:#2d2d2d; color:#d1d5db; border-color:#444; }
-                                    .dark .mode-toggle:hover { background:#3a3a3a; color:#fff; }
-                                    .mode-icon { font-size:1em; }
+                                    /* ── Sun/moon slider toggle ── */
+                                    .dm-switch { display:inline-flex; align-items:center; gap:6px;
+                                                 cursor:pointer; user-select:none; font-size:0.9em;
+                                                 color:#374151; }
+                                    .dark .dm-switch { color:#d1d5db; }
+                                    .dm-track { position:relative; width:44px; height:24px;
+                                                background:#d1d5db; border-radius:12px;
+                                                transition:background .25s; flex-shrink:0; }
+                                    .dark .dm-track { background:#4f46e5; }
+                                    .dm-thumb { position:absolute; top:3px; left:3px;
+                                                width:18px; height:18px; background:#fff;
+                                                border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,.25);
+                                                transition:transform .25s; display:flex;
+                                                align-items:center; justify-content:center;
+                                                font-size:11px; line-height:1; }
+                                    .dark .dm-thumb { transform:translateX(20px); }
+                                    .dm-sun, .dm-moon { font-size:1em; line-height:1; }
                     </style>
                     <style>
                     mjx-container, .mjx-chtml {
@@ -301,8 +305,10 @@ def attach_page_nav() -> str:
         '<a class="back-btn" href="javascript:history.back()">'
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
         '<polyline points="15 18 9 12 15 6"/></svg> Back</a>'
-        '<span class="mode-toggle change">'
-        '<span class="mode-icon">&#9790;</span> Dark mode: <b class="dm-label">OFF</b>'
-        '</span>'
+        '<label class="dm-switch change" title="Toggle dark mode">'
+        '<span class="dm-sun">&#9728;</span>'
+        '<span class="dm-track"><span class="dm-thumb"></span></span>'
+        '<span class="dm-moon">&#9790;</span>'
+        '</label>'
         '</div>'
     )
