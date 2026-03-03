@@ -13,3 +13,6 @@ proxies.txt
 /all_company_questions_
 /v1
 /v2
+save_path
+new_save_path
+__pycache__
