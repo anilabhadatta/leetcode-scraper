@@ -969,11 +969,18 @@ def get_question_company_tag_stats(company_tag_stats):
     cts = json.loads(company_tag_stats)
     if not cts:
         return ""
-    period_labels = {"1": "0 - 1 year", "2": "1 - 2 years", "3": "2 - 3 years"}
+    period_order = ["three_months", "six_months", "more_than_six_months"]
+    period_labels = {
+        "three_months": "0 - 3 months",
+        "six_months": "3 - 6 months",
+        "more_than_six_months": "6 months ago",
+    }
     html = """<div class="q-section"><h5>Company Tag Stats</h5>"""
-    for key in sorted(cts.keys()):
+    for key in period_order:
+        if key not in cts:
+            continue
         companies = sorted(cts[key], key=lambda x: -x['timesEncountered'])
-        label = period_labels.get(key, f"{int(key)-1}-{key} years")
+        label = period_labels.get(key, key)
         pills = "".join(
             f"""<span class="co-pill">{c['name']}<span class="co-cnt">{c['timesEncountered']}</span></span>"""
             for c in companies if c['timesEncountered'] > 0
@@ -1006,7 +1013,7 @@ def get_question_data(item_content, headers):
         if raw_cts:
             try:
                 cts = json.loads(raw_cts)
-                recent = cts.get("1", cts.get("2", cts.get("3", [])))
+                recent = cts.get("three_months") or cts.get("six_months") or cts.get("more_than_six_months") or []
                 top_companies = [c['name'] for c in sorted(recent, key=lambda x: -x['timesEncountered'])[:8]]
             except Exception:
                 pass

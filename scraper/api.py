@@ -185,6 +185,22 @@ def fetch_question(headers: CaseInsensitiveDict, slug: str) -> dict:
     return data
 
 
+def fetch_question_company_tags(headers: CaseInsensitiveDict, slug: str) -> str | None:
+    """Fetch only companyTagStatsV2 for a slug (lightweight — no content/code)."""
+    payload = {
+        "operationName": "GetQuestionCompanyTags",
+        "variables": {"titleSlug": slug},
+        "query": (
+            "query GetQuestionCompanyTags($titleSlug:String!){"
+            "question(titleSlug:$titleSlug){companyTagStatsV2}}"
+        ),
+    }
+    data = lc_post(headers, payload)["data"]["question"]
+    if data is None:
+        raise ValueError(f"Question '{slug}' not found.")
+    return data.get("companyTagStatsV2")
+
+
 def fetch_article(headers: CaseInsensitiveDict, article_id: str) -> dict:
     """Markdown article body."""
     payload = {

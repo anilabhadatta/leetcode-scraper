@@ -57,9 +57,16 @@ def _render_company_stats(raw: str) -> str:
     if not raw:
         return ""
     cts = json.loads(raw)
-    period = {"1": "0 - 3 months", "2": "0 - 6 months", "3": "6 months ago"}
+    period_order = ["three_months", "six_months", "more_than_six_months"]
+    period = {
+        "three_months": "0 - 3 months",
+        "six_months": "3 - 6 months",
+        "more_than_six_months": "6 months ago",
+    }
     html = '<div class="q-section"><h5>Company Tag Stats</h5>'
-    for key in sorted(cts):
+    for key in period_order:
+        if key not in cts:
+            continue
         label = period.get(key, key)
         pills_list = []
         for c in sorted(cts[key], key=lambda x: -x["timesEncountered"]):
@@ -99,7 +106,7 @@ def get_question_data(item_content: dict, headers) -> tuple:
     if raw_cts:
         try:
             cts = json.loads(raw_cts)
-            recent = cts.get("1") or cts.get("2") or cts.get("3") or []
+            recent = cts.get("three_months") or cts.get("six_months") or cts.get("more_than_six_months") or []
             top_cos = [c["name"] for c in sorted(recent, key=lambda x: -x["timesEncountered"])[:8]]
         except Exception:
             pass
