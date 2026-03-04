@@ -168,6 +168,14 @@ def attach_header_in_html() -> str:
                                     .company-card:hover { background:#174ea6; color:#fff; text-decoration:none; }
                                     .dark .company-card { background:#2a3a5c; color:#a8c4ff; border-color:#3a5080; }
                                     .dark .company-card:hover { background:#3d5a8a; color:#fff; }
+                                    /* ── Company card count badge ── */
+                                    .co-count-badge { display:inline-block; background:rgba(23,78,166,.15);
+                                                      color:#174ea6; border-radius:10px;
+                                                      padding:0 6px; font-size:0.75em; font-weight:700;
+                                                      margin-left:6px; vertical-align:middle; }
+                                    .company-card:hover .co-count-badge { background:rgba(255,255,255,.25); color:#fff; }
+                                    .dark .company-card .co-count-badge { background:rgba(168,196,255,.15); color:#a8c4ff; }
+                                    .dark .company-card:hover .co-count-badge { background:rgba(255,255,255,.2); color:#fff; }
                                     /* ── Search box ── */
                                     .lc-search { margin:12px 0; padding:6px 12px; border-radius:6px;
                                                  border:1px solid #ccc; width:100%; max-width:400px;

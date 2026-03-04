@@ -22,8 +22,11 @@ def create_all_company_index_html(company_tags: list, headers, save_path: str, c
     cards_html = ""
     with open(company_tag_save_path, "w", encoding="utf-8") as f:
         for company in company_tags:
-            cards_html += f'<a class="company-card" href="{company["slug"]}/index.html">{company["slug"]}</a>'
-            f.write(f"https://leetcode.com/company/{company['slug']}/\n")
+            slug = company["slug"]
+            count = company.get("questionCount", 0)
+            count_badge = f'<span class="co-count-badge">{count}</span>' if count else ''
+            cards_html += f'<a class="company-card" href="{slug}/index.html">{slug}{count_badge}</a>'
+            f.write(f"https://leetcode.com/company/{slug}/\n")
 
     with open(os.path.join(save_path, "all_company_questions", "index.html"), "w", encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>

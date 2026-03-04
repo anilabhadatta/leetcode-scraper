@@ -731,6 +731,14 @@ def attach_header_in_html():
                                     .company-card:hover { background:#174ea6; color:#fff; text-decoration:none; }
                                     .dark .company-card { background:#2a3a5c; color:#a8c4ff; border-color:#3a5080; }
                                     .dark .company-card:hover { background:#3d5a8a; color:#fff; }
+                                    /* ── Company card count badge ── */
+                                    .co-count-badge { display:inline-block; background:rgba(23,78,166,.15);
+                                                      color:#174ea6; border-radius:10px;
+                                                      padding:0 6px; font-size:0.75em; font-weight:700;
+                                                      margin-left:6px; vertical-align:middle; }
+                                    .company-card:hover .co-count-badge { background:rgba(255,255,255,.25); color:#fff; }
+                                    .dark .company-card .co-count-badge { background:rgba(168,196,255,.15); color:#a8c4ff; }
+                                    .dark .company-card:hover .co-count-badge { background:rgba(255,255,255,.2); color:#fff; }
                                     /* ── Search box ── */
                                     .lc-search { margin:12px 0; padding:6px 12px; border-radius:6px;
                                                  border:1px solid #ccc; width:100%; max-width:400px;
@@ -1146,8 +1154,11 @@ def create_all_company_index_html(company_tags, headers):
     cards_html = ''
     with open(company_tag_save_path, 'w', encoding="utf-8") as f:
         for company in company_tags:
-            cards_html += f'''<a class="company-card" href="{company['slug']}/index.html">{company['slug']}</a>'''
-            f.write(f"https://leetcode.com/company/{company['slug']}/\n")
+            slug = company['slug']
+            count = company.get('questionCount', 0)
+            count_badge = f'<span class="co-count-badge">{count}</span>' if count else ''
+            cards_html += f'<a class="company-card" href="{slug}/index.html">{slug}{count_badge}</a>'
+            f.write(f"https://leetcode.com/company/{slug}/\n")
 
     with open(os.path.join(save_path, "all_company_questions", "index.html"), 'w', encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>
