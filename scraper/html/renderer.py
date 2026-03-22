@@ -96,9 +96,13 @@ def get_question_data(item_content: dict, headers) -> tuple:
     title = safe_filename(qc["title"])
     diff  = qc["difficulty"]
     url   = "https://leetcode.com" + qc["submitUrl"][:-7]
-    code  = json.loads(qc["codeDefinition"])[0]["defaultCode"]
+    code_def = qc.get("codeDefinition")
+    try:
+        code = json.loads(code_def)[0]["defaultCode"] if code_def else ""
+    except Exception:
+        code = ""
     sol   = render_markdown_safe((qc["solution"] or {}).get("content") or "No Solution")
-    hints = "".join(f'<div class="hint-item">{render_markdown_safe(h)}</div>' for h in qc["hints"]) \
+    hints = "".join(f'<div class="hint-item">{render_markdown_safe(h)}</div>' for h in (qc.get("hints") or [])) \
             or '<span style="color:#9ca3af">No Hints</span>'
 
     raw_cts = qc["companyTagStatsV2"]
@@ -146,7 +150,7 @@ def replace_iframes_with_codes(soup: BeautifulSoup, headers) -> BeautifulSoup:
         if "playground" not in iframe.get("src", ""):
             continue
         uuid = iframe["src"].split("/")[-2]
-        codes = fetch_playground_codes(headers, uuid)
+        codes = fetch_playground_codes(headers, uuid) or []
         tabs_list = []
         panes_list = []
         for i, c in enumerate(codes):
